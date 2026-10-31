@@ -1,0 +1,25 @@
+name: 生成邮件草稿
+
+on:
+  schedule:
+    - cron: "0 12 * * *"       # 每天 UTC 12:00 = 纽约早上 8 点（冬令时 7 点）
+  workflow_dispatch:            # 想马上生成草稿时，在 Actions 页面手动点 Run workflow
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python email_draft.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          MAILERLITE_API_KEY: ${{ secrets.MAILERLITE_API_KEY }}
+          MAILERLITE_FROM_EMAIL: ${{ secrets.MAILERLITE_FROM_EMAIL }}
+          MAILERLITE_FROM_NAME: ${{ secrets.MAILERLITE_FROM_NAME }}
+          MAILERLITE_GROUP_ID: ${{ secrets.MAILERLITE_GROUP_ID }}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deal 精选</title>
+<style>
+  :root { --bg:#f6f6f4; --card:#fff; --text:#16181c; --muted:#6b7078; --line:#e4e4e0; --accent:#0b57d0; --good:#0a7a2f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121316; --card:#1c1e22; --text:#ececec; --muted:#9a9ea6; --line:#2c2f35; --accent:#8ab4f8; --good:#5fd38a; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:24px 16px 60px; }
+  header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  h1 { margin:0; font-size:26px; }
+  .sub { color:var(--muted); font-size:13px; }
+  .subscribe { background:var(--accent); color:#fff; padding:9px 16px; border-radius:8px; text-decoration:none; font-weight:600; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 18px; }
+  .tabs button { border:1px solid var(--line); background:var(--card); color:var(--text); padding:6px 14px; border-radius:999px; cursor:pointer; font:inherit; font-size:14px; }
+  .tabs button.on { background:var(--text); color:var(--bg); border-color:var(--text); }
+  .deal { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+  .deal a { color:var(--accent); font-weight:600; text-decoration:none; }
+  .deal a:hover { text-decoration:underline; }
+  .row { margin-top:6px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .price { color:var(--good); font-weight:700; font-size:18px; }
+  .meta { color:var(--muted); font-size:13px; }
+  .empty { color:var(--muted); text-align:center; padding:40px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Deal 精选</h1>
+      <div class="sub">只显示达到价格标准的电脑硬件 deal · 价格以商家页面为准</div>
+    </div>
+    <a class="subscribe" id="subscribe" href="#" target="_blank" rel="noopener">邮件订阅</a>
+  </header>
+  <div class="tabs" id="tabs"></div>
+  <div id="list"><div class="empty">加载中…</div></div>
+</div>
+
+<script>
+// ===== 设置（只改这里）=====
+const SUPABASE_URL = "https://你的项目.supabase.co";
+const SUPABASE_ANON_KEY = "你的 anon public key";      // 公开 key，可以放在网页里
+const SUBSCRIBE_URL = "";                               // MailerLite 订阅表单链接
+const DAYS = 14;                                        // 显示最近几天的 deal
+// ==========================
+
+const LABELS = { all:"全部", laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" };
+const COND = { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" };
+const SRC = { slickdeals:"Slickdeals", reddit:"Reddit", tomshardware:"Tom's Hardware", techradar:"TechRadar" };
+let deals = [], current = "all";
+
+if (SUBSCRIBE_URL) document.getElementById("subscribe").href = SUBSCRIBE_URL;
+else document.getElementById("subscribe").style.display = "none";
+
+const money = x => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+function ago(t) {
+  const m = Math.round((Date.now() - new Date(t)) / 60000);
+  if (m < 60) return m + " 分钟前";
+  if (m < 1440) return Math.round(m / 60) + " 小时前";
+  return Math.round(m / 1440) + " 天前";
+}
+
+function render() {
+  const cats = ["all", ...Object.keys(LABELS).filter(c => c !== "all" && deals.some(d => d.category === c))];
+  document.getElementById("tabs").innerHTML = cats.map(c =>
+    `<button class="${c === current ? "on" : ""}" data-c="${c}">${LABELS[c]}${c === "all" ? "" : " " + deals.filter(d => d.category === c).length}</button>`
+  ).join("");
+  const shown = current === "all" ? deals : deals.filter(d => d.category === current);
+  document.getElementById("list").innerHTML = shown.length ? shown.map(d => {
+    const compare = d.category === "hdd" ? `每 TB ${money(d.price_checked)}（标准 ${money(d.threshold)}）` : `标准 ${money(d.threshold)}`;
+    const tags = [LABELS[d.category], COND[d.condition], d.quantity > 1 ? d.quantity + " 件装" : "", d.store, SRC[d.source] ? "来自 " + SRC[d.source] : "", ago(d.created_at)].filter(Boolean);
+    return `<div class="deal">
+      <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a>
+      <div class="row"><span class="price">${money(d.price)}</span><span class="meta">${compare}</span></div>
+      <div class="meta">${tags.map(esc).join(" · ")}</div>
+    </div>`;
+  }).join("") : `<div class="empty">最近 ${DAYS} 天没有达标的 deal</div>`;
+}
+
+document.getElementById("tabs").addEventListener("click", e => {
+  if (e.target.dataset.c) { current = e.target.dataset.c; render(); }
+});
+
+const since = new Date(Date.now() - DAYS * 86400000).toISOString();
+if (SUPABASE_URL.includes("你的") || SUPABASE_ANON_KEY.includes("你的")) {
+  document.getElementById("list").innerHTML = '<div class="empty">还没设置 Supabase：请修改网页代码里的 SUPABASE_URL 和 SUPABASE_ANON_KEY</div>';
+} else fetch(`${SUPABASE_URL}/rest/v1/deals?select=title,url,source,price,price_checked,threshold,category,condition,quantity,store,created_at&status=eq.passed&created_at=gte.${since}&order=created_at.desc&limit=300`,
+  { headers: { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY } })
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(rows => { deals = rows; render(); })
+  .catch(() => { document.getElementById("list").innerHTML = '<div class="empty">加载失败，请检查网页里的 Supabase 设置</div>'; });
+</script>
+</body>
+</html>
