@@ -3,14 +3,28 @@
 每 30 分钟自动抓取 Slickdeals、r/buildapcsales、Woot（官方 API），以及 Tom's Hardware 和 TechRadar 的 deal 文章，用 AI 读出商品信息，按你的价格规则筛选。
 达标的 deal 显示在网站上；每天早上自动生成一封 MailerLite 邮件草稿，你检查后手动发送。
 
+## 后台
+
+网址：**https://kongfuhorse.github.io/samsdeals/admin.html**
+
+- 价格规则、调整规则：增加、修改、删除、临时停用
+- 下拉选项：新增显卡型号、系列等（AI 解析也会认识新加的值）
+- 优惠来源：逐个开关
+- 刷新设置：自动刷新间隔、立即刷新、最近运行记录、修改后台密码
+- "立即刷新"想马上生效，需要在后台填一个 GitHub 令牌（页面上有步骤）；不填也能用，最多等 10 分钟
+
+数据库设置：先运行 schema.sql，再运行 schema_admin.sql（运行前把文件最后的 CHANGE_ME_PASSWORD 换成后台密码）。
+
 ## 文件说明
 
 | 文件 | 作用 | 要不要改 |
 |---|---|---|
 | schema.sql | 建表 + 你的规则 | 只运行一次 |
 | index.html | 网站页面 | 改顶部 3 个设置 |
+| admin.html | 后台页面 | 改顶部 2 个设置 |
+| schema_admin.sql | 后台用的表和函数 | 只运行一次 |
 | run.py | 主程序：抓取 → AI 解析 → 筛选 → 存库 | 不用改 |
-| sources.py | deal 来源（RSS 地址）。帖子型和文章型分开列 | 加来源时改 |
+| sources.py | 抓取各类来源（来源列表在数据库 sources 表里） | 不用改 |
 | parser.py | AI 读标题 | 不用改 |
 | deal_filter.py | 按规则判断是否达标 | 不用改 |
 | db.py | 读写 Supabase | 不用改 |

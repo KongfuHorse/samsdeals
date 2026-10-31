@@ -110,3 +110,17 @@ def mark_articles_seen(rows):
 def save_run(row):
     r = requests.post(f"{_base()}/runs", headers=_headers({"Prefer": "return=minimal"}), json=row, timeout=30)
     r.raise_for_status()
+
+
+def load_sources():
+    return _get("sources", {"select": "*", "order": "sort_order"})
+
+
+def load_settings():
+    rows = _get("settings", {"select": "refresh_minutes,refresh_requested_at", "id": "eq.1"})
+    return rows[0] if rows else {"refresh_minutes": 30, "refresh_requested_at": None}
+
+
+def last_run():
+    rows = _get("runs", {"select": "started_at,finished_at", "order": "finished_at.desc", "limit": "1"})
+    return rows[0] if rows else None

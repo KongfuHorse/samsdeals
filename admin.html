@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Sam's Deals 后台</title>
+<style>
+  :root { --bg:#f4f4f1; --card:#fff; --text:#16181c; --muted:#6b7078; --line:#e2e2dd; --accent:#0b57d0; --accent-soft:#e8f0fe;
+          --good:#0a7a2f; --bad:#c5221f; --warn:#fff6dc; --input:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#121316; --card:#1c1e22; --text:#ececec; --muted:#9a9ea6; --line:#2e3137; --accent:#8ab4f8; --accent-soft:#1f2a3d;
+            --good:#5fd38a; --bad:#f28b82; --warn:#3a3320; --input:#15171a; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; }
+  .wrap { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:22px; margin:0; }
+  h2 { font-size:16px; margin:0 0 6px; }
+  .muted { color:var(--muted); }
+  .small { font-size:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
+  button { font:inherit; cursor:pointer; border-radius:7px; border:1px solid var(--line); background:var(--card); color:var(--text); padding:6px 12px; }
+  button:hover { border-color:var(--muted); }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button.danger { color:var(--bad); }
+  button:disabled { opacity:.5; cursor:default; }
+  input, select { font:inherit; color:var(--text); background:var(--input); border:1px solid var(--line); border-radius:6px; padding:5px 7px; min-width:0; }
+  input:focus, select:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  label { display:block; }
+
+  /* 登录 */
+  #login { max-width:340px; margin:12vh auto 0; }
+  #login input { width:100%; margin:4px 0 12px; padding:8px 10px; }
+  #login button { width:100%; padding:9px; }
+  .error { color:var(--bad); min-height:20px; margin-top:8px; }
+
+  /* 顶部 */
+  header { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  header .right { display:flex; gap:8px; align-items:center; }
+  header a { color:var(--accent); text-decoration:none; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  .tabs button { border-radius:999px; }
+  .tabs button.on { background:var(--text); color:var(--bg); border-color:var(--text); }
+
+  /* 表格 */
+  .table-wrap { overflow-x:auto; margin:0 -16px; padding:0 16px; }
+  table { border-collapse:collapse; width:100%; min-width:820px; }
+  th { text-align:left; font-weight:600; font-size:12px; color:var(--muted); padding:6px 6px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  td { padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  td input[type=text], td input[type=number] { width:100%; }
+  td select { width:100%; }
+  tr.dirty td { background:var(--warn); }
+  tr.inactive td:not(:first-child) { opacity:.55; }
+  .actions { white-space:nowrap; display:flex; gap:4px; }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+
+  /* 开关 */
+  .switch { position:relative; display:inline-block; width:38px; height:22px; flex:none; }
+  .switch input { opacity:0; width:0; height:0; }
+  .switch span { position:absolute; inset:0; background:var(--line); border-radius:22px; transition:.15s; cursor:pointer; }
+  .switch span:before { content:""; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s; }
+  .switch input:checked + span { background:var(--good); }
+  .switch input:checked + span:before { transform:translateX(16px); }
+
+  .source { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .source:last-child { border-bottom:0; }
+  .source .info { min-width:0; flex:1; }
+  .source .url { font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:999px; background:var(--accent-soft); color:var(--accent); margin-left:6px; }
+
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0 14px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:999px; padding:3px 6px 3px 10px; }
+  .chip button { border:0; padding:0 6px; background:none; color:var(--muted); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:end; }
+  .row > * { flex:0 1 auto; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; }
+  .big { font-size:15px; padding:10px 18px; }
+  .stat { display:inline-block; margin-right:18px; }
+  .stat b { font-size:18px; display:block; }
+
+  #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--text); color:var(--bg);
+           padding:9px 16px; border-radius:8px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; }
+  #toast.show { opacity:1; }
+  #toast.err { background:var(--bad); color:#fff; }
+  .hidden { display:none !important; }
+  .help { background:var(--accent-soft); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px; }
+  .help ol { margin:6px 0 0; padding-left:20px; }
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div id="login" class="card">
+  <h1 style="margin-bottom:4px">Sam's Deals 后台</h1>
+  <div class="muted small" style="margin-bottom:16px">请登录</div>
+  <form id="loginForm">
+    <label>账号<input id="username" autocomplete="username" required></label>
+    <label>密码<input id="password" type="password" autocomplete="current-password" required></label>
+    <button class="primary" type="submit" id="loginBtn">登录</button>
+    <div class="error" id="loginError"></div>
+  </form>
+</div>
+
+<!-- 后台 -->
+<div id="app" class="wrap hidden">
+  <header>
+    <div>
+      <h1>Sam's Deals 后台</h1>
+      <div class="muted small" id="summary"></div>
+    </div>
+    <div class="right">
+      <a href="./" target="_blank" rel="noopener">查看网站 ↗</a>
+      <button id="logoutBtn">退出</button>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button data-tab="rules" class="on">价格规则</button>
+    <button data-tab="adjustments">调整规则</button>
+    <button data-tab="options">下拉选项</button>
+    <button data-tab="sources">优惠来源</button>
+    <button data-tab="refresh">刷新设置</button>
+  </div>
+
+  <!-- 价格规则 -->
+  <section id="tab-rules" class="card">
+    <div class="toolbar">
+      <div>
+        <h2>价格规则</h2>
+        <div class="muted small">全新商品的标准价。价格低于标准就算达标。显卡、内存、容量留空 = 不限；一个 deal 符合多条时，用条件最细的那条。</div>
+      </div>
+      <button class="primary" id="addRule">+ 新增规则</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>启用</th><th>品类</th><th>显卡</th><th>内存 GB</th><th>容量 TB</th><th>比较方式</th><th>标准价 $</th><th>备注</th><th></th></tr></thead>
+        <tbody id="rulesBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 调整规则 -->
+  <section id="tab-adjustments" class="card hidden">
+    <div class="toolbar">
+      <div>
+        <h2>调整规则</h2>
+        <div class="muted small">在价格规则的标准价上调整。比如"笔记本、成色是开箱或翻新，标准降低 10%"。多条同时生效时百分比相乘，金额相加。</div>
+      </div>
+      <button class="primary" id="addAdj">+ 新增调整</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>启用</th><th>品类</th><th>看哪一项</th><th>等于（多个用英文逗号隔开）</th><th>百分比 %</th><th>金额 $</th><th>备注</th><th></th></tr></thead>
+        <tbody id="adjBody"></tbody>
+      </table>
+    </div>
+    <div class="muted small" style="margin-top:10px" id="adjHint"></div>
+  </section>
+
+  <!-- 下拉选项 -->
+  <section id="tab-options" class="card hidden">
+    <h2>下拉选项</h2>
+    <div class="muted small" style="margin-bottom:10px">规则里的下拉菜单从这里来，AI 解析标题时也只会从这些值里选。比如新出了 RTX 5080 Super，在"显卡"里加上它。</div>
+    <div id="optionsList"></div>
+    <div class="row">
+      <label class="small">类型<br><select id="optField">
+        <option value="gpu">显卡</option><option value="series">系列</option>
+        <option value="condition">成色</option><option value="category">品类</option></select></label>
+      <label class="small">值（程序用，英文）<br><input id="optValue" placeholder="RTX 5080 Super"></label>
+      <label class="small">显示名<br><input id="optLabel" placeholder="可不填"></label>
+      <button class="primary" id="addOpt">添加</button>
+    </div>
+  </section>
+
+  <!-- 优惠来源 -->
+  <section id="tab-sources" class="card hidden">
+    <h2>优惠来源</h2>
+    <div class="muted small" style="margin-bottom:6px">关掉的来源下次抓取时会跳过。开关后立即保存。</div>
+    <div id="sourcesList"></div>
+  </section>
+
+  <!-- 刷新设置 -->
+  <section id="tab-refresh" class="hidden">
+    <div class="grid2">
+      <div class="card">
+        <h2>立即刷新</h2>
+        <div class="muted small" style="margin-bottom:12px" id="refreshHint"></div>
+        <button class="primary big" id="refreshNow">立即刷新</button>
+        <div class="small" style="margin-top:10px" id="refreshStatus"></div>
+      </div>
+      <div class="card">
+        <h2>自动刷新间隔</h2>
+        <div class="muted small" style="margin-bottom:12px">多久自动抓取一次。最短 10 分钟。GitHub 的定时可能晚几分钟。</div>
+        <div class="row">
+          <select id="refreshMinutes"></select>
+          <button class="primary" id="saveInterval">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>最近运行</h2>
+      <div id="dealStats" style="margin:6px 0 12px"></div>
+      <div class="table-wrap">
+        <table style="min-width:520px">
+          <thead><tr><th>完成时间</th><th>用时</th><th>检查</th><th>新增</th><th>达标</th></tr></thead>
+          <tbody id="runsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>GitHub 令牌 <span class="badge" id="tokenBadge"></span></h2>
+        <div class="help">
+          有了令牌，"立即刷新"会马上通知 GitHub 运行（约 1 分钟出结果）。没有令牌也能用，但要等下一次定时检查（最多约 10 分钟）。
+          <ol>
+            <li>打开 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub 新建令牌</a></li>
+            <li>Repository access 选 <b>Only select repositories</b>，选 <b>samsdeals</b></li>
+            <li>Permissions → Repository permissions → <b>Actions</b> 选 <b>Read and write</b></li>
+            <li>点 Generate token，复制后粘贴到下面</li>
+          </ol>
+        </div>
+        <div class="row">
+          <input id="ghToken" type="password" placeholder="github_pat_..." style="flex:1; min-width:200px" autocomplete="off">
+          <button class="primary" id="saveToken">保存令牌</button>
+          <button class="danger" id="clearToken">删除</button>
+        </div>
+        <div class="muted small" style="margin-top:6px">令牌只存在数据库里，保存后网页上看不到。</div>
+      </div>
+      <div class="card">
+        <h2>修改后台密码</h2>
+        <div class="row" style="margin-top:8px">
+          <input id="oldPw" type="password" placeholder="原密码" autocomplete="current-password">
+          <input id="newPw" type="password" placeholder="新密码（至少 8 位）" autocomplete="new-password">
+          <button class="primary" id="changePw">修改</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===== 设置 =====
+const SUPABASE_URL = "https://pmjmexfueofdaubcumgk.supabase.co";
+const SUPABASE_KEY = "sb_publishable_l02lU8RFOe5RwSkO-YasHw_MBTgd-av";   // 公开 key；所有修改都要先登录
+// ===============
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const FIELD_NAMES = { gpu:"显卡", series:"系列", condition:"成色", category:"品类" };
+const ADJ_FIELDS = { condition:"成色", series:"系列", brand:"品牌", store:"商家" };
+const KIND_NAMES = { post_rss:"帖子 RSS", article_rss:"文章 RSS", woot:"Woot API" };
+const INTERVALS = [10, 15, 20, 30, 45, 60, 90, 120, 180, 360, 720, 1440];
+let token = null, data = null;
+
+// ---------- 小工具 ----------
+function store(k, v) { try { v === undefined ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $("toast"); t.textContent = msg; t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = "", isErr ? 4000 : 2000);
+}
+function ago(t) {
+  if (!t) return "—";
+  const m = Math.round((Date.now() - new Date(t)) / 60000);
+  if (m < 1) return "刚刚";
+  if (m < 60) return m + " 分钟前";
+  if (m < 1440) return Math.round(m / 60) + " 小时前";
+  return Math.round(m / 1440) + " 天前";
+}
+function fmtTime(t) { return new Date(t).toLocaleString("zh-CN", { month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit" }); }
+function intervalText(m) { return m < 60 ? m + " 分钟" : (m % 60 ? (m / 60).toFixed(1) : m / 60) + " 小时"; }
+
+async function rpc(fn, args) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(args || {}),
+  });
+  const text = await r.text();
+  if (!r.ok) {
+    let msg = text;
+    try { msg = JSON.parse(text).message || text; } catch (e) {}
+    if (/登录已过期/.test(msg)) { showLogin("登录已过期，请重新登录"); }
+    throw new Error(msg);
+  }
+  return text ? JSON.parse(text) : null;
+}
+
+// ---------- 登录 ----------
+function showLogin(msg) {
+  token = null; store("adminToken");
+  $("app").classList.add("hidden"); $("login").classList.remove("hidden");
+  $("loginError").textContent = msg || "";
+}
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  $("loginBtn").disabled = true; $("loginError").textContent = "";
+  try {
+    token = await rpc("admin_login", { p_username: $("username").value.trim(), p_password: $("password").value });
+    store("adminToken", token); $("password").value = "";
+    await enterApp();
+  } catch (err) { $("loginError").textContent = err.message; }
+  $("loginBtn").disabled = false;
+});
+$("logoutBtn").addEventListener("click", async () => {
+  try { await rpc("admin_logout", { p_token: token }); } catch (e) {}
+  showLogin();
+});
+async function enterApp() {
+  await reload();
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+}
+async function reload() {
+  data = await rpc("admin_get_all", { p_token: token });
+  renderAll();
+}
+
+// ---------- 标签 ----------
+$("tabs").addEventListener("click", e => {
+  const tab = e.target.dataset.tab; if (!tab) return;
+  [...$("tabs").children].forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  ["rules", "adjustments", "options", "sources", "refresh"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== tab));
+});
+
+function optionsOf(field) { return data.options.filter(o => o.field === field && o.active); }
+function selectHtml(cls, items, value, emptyLabel) {
+  let h = `<select class="${cls}">`;
+  if (emptyLabel !== undefined) h += `<option value="">${emptyLabel}</option>`;
+  for (const [v, label] of items) h += `<option value="${esc(v)}" ${String(v) === String(value ?? "") ? "selected" : ""}>${esc(label)}</option>`;
+  return h + "</select>";
+}
+function markDirty(tr) { tr.classList.add("dirty"); }
+
+function renderAll() {
+  const s = data.deal_stats || {}, last = data.runs[0];
+  $("summary").textContent = `规则 ${data.rules.length} 条 · 来源启用 ${data.sources.filter(x => x.enabled).length}/${data.sources.length} · 上次抓取 ${last ? ago(last.finished_at) : "—"} · 达标 deal ${s.passed || 0} 条`;
+  renderRules(); renderAdjustments(); renderOptions(); renderSources(); renderRefresh();
+}
+
+// ---------- 价格规则 ----------
+function ruleRow(r) {
+  const cats = optionsOf("category").map(o => [o.value, o.label]);
+  const gpus = optionsOf("gpu").map(o => [o.value, o.label]);
+  const tr = document.createElement("tr");
+  tr.dataset.id = r.id || "";
+  if (!r.id) tr.classList.add("dirty");
+  if (r.active === false) tr.classList.add("inactive");
+  tr.innerHTML = `
+    <td><label class="switch"><input type="checkbox" class="f-active" ${r.active !== false ? "checked" : ""}><span></span></label></td>
+    <td style="min-width:110px">${selectHtml("f-category", cats, r.category)}</td>
+    <td style="min-width:120px">${selectHtml("f-gpu", gpus, r.gpu, "不限")}</td>
+    <td style="width:80px"><input type="number" class="f-ram" min="0" step="1" value="${r.ram_gb ?? ""}" placeholder="不限"></td>
+    <td style="width:80px"><input type="number" class="f-cap" min="0" step="0.5" value="${r.capacity_tb ?? ""}" placeholder="不限"></td>
+    <td style="min-width:110px">${selectHtml("f-mode", [["total", "单件价格"], ["per_tb", "每 TB 价格"]], r.price_mode || "total")}</td>
+    <td style="width:100px"><input type="number" class="f-price" min="0" step="0.01" value="${r.max_price ?? ""}" required></td>
+    <td style="min-width:140px"><input type="text" class="f-note" value="${esc(r.note)}"></td>
+    <td><div class="actions"><button class="primary f-save">保存</button><button class="danger f-del">删除</button></div></td>`;
+  tr.addEventListener("input", () => markDirty(tr));
+  tr.querySelector(".f-active").addEventListener("change", () => { tr.classList.toggle("inactive", !tr.querySelector(".f-active").checked); });
+  tr.querySelector(".f-save").addEventListener("click", () => saveRule(tr));
+  tr.querySelector(".f-del").addEventListener("click", () => deleteRule(tr));
+  return tr;
+}
+function renderRules() {
+  const body = $("rulesBody"); body.innerHTML = "";
+  data.rules.forEach(r => body.appendChild(ruleRow(r)));
+}
+$("addRule").addEventListener("click", () => {
+  const tr = ruleRow({ category: optionsOf("category")[0]?.value, price_mode: "total", active: true });
+  $("rulesBody").prepend(tr); tr.querySelector(".f-price").focus();
+});
+async function saveRule(tr) {
+  const q = c => tr.querySelector(c);
+  const price = q(".f-price").value;
+  if (!price || Number(price) <= 0) { toast("请填写标准价", true); q(".f-price").focus(); return; }
+  const rule = {
+    id: tr.dataset.id || null, category: q(".f-category").value, gpu: q(".f-gpu").value,
+    ram_gb: q(".f-ram").value, capacity_tb: q(".f-cap").value, price_mode: q(".f-mode").value,
+    max_price: price, note: q(".f-note").value, active: q(".f-active").checked,
+  };
+  try {
+    const id = await rpc("admin_save_rule", { p_token: token, p_rule: rule });
+    tr.dataset.id = id; tr.classList.remove("dirty"); toast("已保存");
+    await reload();
+  } catch (e) { toast("保存失败：" + e.message, true); }
+}
+async function deleteRule(tr) {
+  if (!tr.dataset.id) { tr.remove(); return; }
+  if (!confirm("确定删除这条规则？")) return;
+  try { await rpc("admin_delete_rule", { p_token: token, p_id: Number(tr.dataset.id) }); toast("已删除"); await reload(); }
+  catch (e) { toast("删除失败：" + e.message, true); }
+}
+
+// ---------- 调整规则 ----------
+function adjRow(a) {
+  const cats = optionsOf("category").map(o => [o.value, o.label]);
+  const tr = document.createElement("tr");
+  tr.dataset.id = a.id || "";
+  if (!a.id) tr.classList.add("dirty");
+  if (a.active === false) tr.classList.add("inactive");
+  tr.innerHTML = `
+    <td><label class="switch"><input type="checkbox" class="f-active" ${a.active !== false ? "checked" : ""}><span></span></label></td>
+    <td style="min-width:110px">${selectHtml("f-category", cats, a.category, "全部品类")}</td>
+    <td style="min-width:90px">${selectHtml("f-field", Object.entries(ADJ_FIELDS), a.field || "condition")}</td>
+    <td style="min-width:180px"><input type="text" class="f-value" value="${esc(a.value)}" placeholder="open_box,refurb,used"></td>
+    <td style="width:80px"><input type="number" class="f-pct" step="0.5" value="${a.pct ?? 0}"></td>
+    <td style="width:80px"><input type="number" class="f-amount" step="1" value="${a.amount ?? 0}"></td>
+    <td style="min-width:140px"><input type="text" class="f-note" value="${esc(a.note)}"></td>
+    <td><div class="actions"><button class="primary f-save">保存</button><button class="danger f-del">删除</button></div></td>`;
+  tr.addEventListener("input", () => markDirty(tr));
+  tr.querySelector(".f-active").addEventListener("change", () => { tr.classList.toggle("inactive", !tr.querySelector(".f-active").checked); });
+  tr.querySelector(".f-save").addEventListener("click", () => saveAdj(tr));
+  tr.querySelector(".f-del").addEventListener("click", () => deleteAdj(tr));
+  return tr;
+}
+function renderAdjustments() {
+  const body = $("adjBody"); body.innerHTML = "";
+  data.adjustments.forEach(a => body.appendChild(adjRow(a)));
+  const conds = optionsOf("condition").map(o => `${o.value}（${o.label}）`).join("、");
+  const series = optionsOf("series").map(o => o.value).join("、");
+  $("adjHint").innerHTML = `成色可填：${esc(conds)}<br>系列可填：${esc(series) || "（在下拉选项里添加）"}<br>品牌、商家按原文写，比如 Dell、ASUS、Best Buy、Woot`;
+}
+$("addAdj").addEventListener("click", () => {
+  const tr = adjRow({ field: "condition", pct: 0, amount: 0, active: true });
+  $("adjBody").prepend(tr); tr.querySelector(".f-value").focus();
+});
+async function saveAdj(tr) {
+  const q = c => tr.querySelector(c);
+  if (!q(".f-value").value.trim()) { toast("请填写'等于'的值", true); q(".f-value").focus(); return; }
+  const adj = {
+    id: tr.dataset.id || null, category: q(".f-category").value, field: q(".f-field").value,
+    value: q(".f-value").value.trim(), pct: q(".f-pct").value, amount: q(".f-amount").value,
+    note: q(".f-note").value, active: q(".f-active").checked,
+  };
+  try { await rpc("admin_save_adjustment", { p_token: token, p_adj: adj }); toast("已保存"); await reload(); }
+  catch (e) { toast("保存失败：" + e.message, true); }
+}
+async function deleteAdj(tr) {
+  if (!tr.dataset.id) { tr.remove(); return; }
+  if (!confirm("确定删除这条调整？")) return;
+  try { await rpc("admin_delete_adjustment", { p_token: token, p_id: Number(tr.dataset.id) }); toast("已删除"); await reload(); }
+  catch (e) { toast("删除失败：" + e.message, true); }
+}
+
+// ---------- 下拉选项 ----------
+function renderOptions() {
+  let h = "";
+  for (const f of ["gpu", "series", "condition", "category"]) {
+    h += `<div class="small muted">${FIELD_NAMES[f]}</div><div class="chips">`;
+    for (const o of data.options.filter(o => o.field === f)) {
+      h += `<span class="chip">${esc(o.label || o.value)}${o.label && o.label !== o.value ? ` <span class="muted small">${esc(o.value)}</span>` : ""}<button data-id="${o.id}" title="删除">×</button></span>`;
+    }
+    h += "</div>";
+  }
+  $("optionsList").innerHTML = h;
+}
+$("optionsList").addEventListener("click", async e => {
+  const id = e.target.dataset.id; if (!id) return;
+  if (!confirm("删除这个选项？已经用到它的规则不会被删除，但 AI 以后不会再识别它。")) return;
+  try { await rpc("admin_delete_option", { p_token: token, p_id: Number(id) }); toast("已删除"); await reload(); }
+  catch (err) { toast("删除失败：" + err.message, true); }
+});
+$("addOpt").addEventListener("click", async () => {
+  const value = $("optValue").value.trim();
+  if (!value) { toast("请填写值", true); return; }
+  try {
+    await rpc("admin_add_option", { p_token: token, p_field: $("optField").value, p_value: value, p_label: $("optLabel").value });
+    $("optValue").value = ""; $("optLabel").value = ""; toast("已添加"); await reload();
+  } catch (e) { toast("添加失败：" + e.message, true); }
+});
+
+// ---------- 优惠来源 ----------
+function renderSources() {
+  $("sourcesList").innerHTML = data.sources.map(s => `
+    <div class="source">
+      <label class="switch"><input type="checkbox" data-key="${esc(s.key)}" ${s.enabled ? "checked" : ""}><span></span></label>
+      <div class="info">
+        <div>${esc(s.name)}<span class="badge">${KIND_NAMES[s.kind] || s.kind}</span></div>
+        <div class="url">${esc(s.kind === "woot" ? "Woot 分类：" + s.url : s.url)}</div>
+      </div>
+    </div>`).join("");
+}
+$("sourcesList").addEventListener("change", async e => {
+  const key = e.target.dataset.key; if (!key) return;
+  const on = e.target.checked;
+  try { await rpc("admin_set_source", { p_token: token, p_key: key, p_enabled: on }); toast(on ? "已启用" : "已关闭"); await reload(); }
+  catch (err) { e.target.checked = !on; toast("保存失败：" + err.message, true); }
+});
+
+// ---------- 刷新设置 ----------
+function renderRefresh() {
+  const st = data.settings;
+  $("refreshMinutes").innerHTML = INTERVALS.map(m => `<option value="${m}" ${m === st.refresh_minutes ? "selected" : ""}>每 ${intervalText(m)}</option>`).join("");
+  $("tokenBadge").textContent = st.has_github_token ? "已设置" : "未设置";
+  $("refreshHint").textContent = st.has_github_token
+    ? "点击后马上通知 GitHub 运行，大约 1 到 2 分钟后出结果。"
+    : "还没设置 GitHub 令牌：点击后会在下一次定时检查时运行（最多约 10 分钟）。设置令牌后可以马上运行。";
+  const s = data.deal_stats || {};
+  $("dealStats").innerHTML = [["达标", s.passed], ["没达标", s.not_passed], ["没有规则", s.no_rule], ["缺信息", s.need_info], ["不相关", s.other]]
+    .map(([k, v]) => `<span class="stat"><b>${v || 0}</b><span class="muted small">${k}</span></span>`).join("");
+  $("runsBody").innerHTML = data.runs.length ? data.runs.map(r => {
+    const secs = r.started_at ? Math.round((new Date(r.finished_at) - new Date(r.started_at)) / 1000) : null;
+    return `<tr><td>${fmtTime(r.finished_at)} <span class="muted small">${ago(r.finished_at)}</span></td><td>${secs != null ? secs + " 秒" : "—"}</td><td>${r.checked}</td><td>${r.new_deals}</td><td>${r.passed}</td></tr>`;
+  }).join("") : `<tr><td colspan="5" class="muted">还没有运行记录</td></tr>`;
+}
+$("saveInterval").addEventListener("click", async () => {
+  try {
+    await rpc("admin_save_settings", { p_token: token, p_refresh_minutes: Number($("refreshMinutes").value), p_github_token: null });
+    toast("已保存"); await reload();
+  } catch (e) { toast("保存失败：" + e.message, true); }
+});
+$("refreshNow").addEventListener("click", async () => {
+  const btn = $("refreshNow"); btn.disabled = true;
+  $("refreshStatus").textContent = "发送中…";
+  try {
+    const res = await rpc("admin_refresh_now", { p_token: token });
+    if (res === "queued") {
+      $("refreshStatus").textContent = "已排队：下一次定时检查时运行（最多约 10 分钟）。";
+    } else {
+      $("refreshStatus").textContent = "已通知 GitHub，正在确认…";
+      setTimeout(checkDispatch, 4000);
+    }
+    const before = data.runs[0]?.finished_at;
+    watchForNewRun(before);
+  } catch (e) { $("refreshStatus").textContent = "失败：" + e.message; }
+  setTimeout(() => btn.disabled = false, 15000);
+});
+async function checkDispatch() {
+  try {
+    const st = await rpc("admin_dispatch_status", { p_token: token });
+    if (!st) { setTimeout(checkDispatch, 3000); return; }
+    if (st.status_code === 204) $("refreshStatus").textContent = "GitHub 已开始运行，完成后最近运行列表会自动更新。";
+    else if (st.status_code == null && !st.error) setTimeout(checkDispatch, 3000);
+    else $("refreshStatus").textContent = `GitHub 没有接受（${st.status_code || st.error}）。请检查令牌权限是否包含 Actions: Read and write。`;
+  } catch (e) { $("refreshStatus").textContent = "确认失败：" + e.message; }
+}
+let watchTimer;
+function watchForNewRun(before, tries = 0) {
+  clearTimeout(watchTimer);
+  if (tries > 40) return;                  // 最多看 10 分钟
+  watchTimer = setTimeout(async () => {
+    try {
+      await reload();
+      const latest = data.runs[0]?.finished_at;
+      if (latest && latest !== before) {
+        const r = data.runs[0];
+        $("refreshStatus").textContent = `刷新完成：检查 ${r.checked} 条，新增 ${r.new_deals} 条，达标 ${r.passed} 条。`;
+        toast("刷新完成"); return;
+      }
+    } catch (e) {}
+    watchForNewRun(before, tries + 1);
+  }, 15000);
+}
+$("saveToken").addEventListener("click", async () => {
+  const v = $("ghToken").value.trim();
+  if (!v) { toast("请粘贴令牌", true); return; }
+  try {
+    await rpc("admin_save_settings", { p_token: token, p_refresh_minutes: data.settings.refresh_minutes, p_github_token: v });
+    $("ghToken").value = ""; toast("令牌已保存"); await reload();
+  } catch (e) { toast("保存失败：" + e.message, true); }
+});
+$("clearToken").addEventListener("click", async () => {
+  if (!confirm("删除 GitHub 令牌？")) return;
+  try {
+    await rpc("admin_save_settings", { p_token: token, p_refresh_minutes: data.settings.refresh_minutes, p_github_token: "" });
+    toast("令牌已删除"); await reload();
+  } catch (e) { toast("删除失败：" + e.message, true); }
+});
+$("changePw").addEventListener("click", async () => {
+  try {
+    await rpc("admin_change_password", { p_token: token, p_old: $("oldPw").value, p_new: $("newPw").value });
+    $("oldPw").value = ""; $("newPw").value = ""; toast("密码已修改");
+  } catch (e) { toast("修改失败：" + e.message, true); }
+});
+
+// ---------- 启动：如果本次浏览器会话里已经登录过，直接进入 ----------
+(async () => {
+  const saved = load("adminToken");
+  if (saved) {
+    token = saved;
+    try { await enterApp(); } catch (e) { showLogin(); }
+  }
+})();
+</script>
+</body>
+</html>

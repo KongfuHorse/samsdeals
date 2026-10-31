@@ -3,7 +3,7 @@
   - 帖子型（Slickdeals、Reddit）：一个标题 = 一个 deal，标题里有价格
   - 文章型（Tom's Hardware、TechRadar）：一篇文章里可能有多个 deal，价格在正文里
   - Woot：用官方 API（需要 WOOT_API_KEY），每个商品当作一条帖子处理
-要加新来源：在 POST_FEEDS 或 ARTICLE_FEEDS 里加一行即可。
+来源列表在 Supabase 的 sources 表里，后台可以开关；要加新来源，在表里加一行。
 """
 import calendar
 import json
@@ -17,30 +17,22 @@ from bs4 import BeautifulSoup
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (deal-filter demo)"}
 
-# 帖子型：(来源名, RSS 地址)
-POST_FEEDS = [
-    ("slickdeals", "https://slickdeals.net/newsearch.php?mode=frontpage&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?mode=popdeals&searcharea=deals&searchin=first&rss=1"),
-    # 按显卡型号分开搜：每个 RSS 只保留最新 25 条，分开搜不容易被新帖子挤掉
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5090&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5080&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5070+ti&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5070&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5060&searcharea=deals&searchin=first&rss=1"),    ("slickdeals", "https://slickdeals.net/newsearch.php?q=alienware&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=lenovo+outlet&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=hard+drive&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=ssd&searcharea=deals&searchin=first&rss=1"),
-    ("reddit", "https://www.reddit.com/r/buildapcsales/new/.rss"),
-]
+# 所有来源都存在 Supabase 的 sources 表里，后台可以开关。
+# 每个来源：{"key", "name", "kind": post_rss / article_rss / woot, "url", "deal_titles_only", "enabled"}
 
 # 标题像 deal 的文章才读（用于混有新闻的 RSS）
 DEAL_TITLE = re.compile(r"(deal|save |saving|\$\d|% off|lowest price|record low|price drop|sale\b)", re.I)
 
-# 文章型：(来源名, RSS 地址, 是否只读标题像 deal 的文章)
-ARTICLE_FEEDS = [
-    ("tomshardware", "https://www.tomshardware.com/feeds.xml", True),   # 主 RSS，新闻和 deal 混在一起
-    ("techradar", "https://www.techradar.com/feeds/tag/deals", False),   # 本身就是 deal 专栏
-]
+
+def source_label(key):
+    """存进 deals 表的来源名，网站上显示用"""
+    if key.startswith("sd_"):
+        return "slickdeals"
+    if key.startswith("reddit"):
+        return "reddit"
+    if key.startswith("woot"):
+        return "woot"
+    return key
 
 # 关键词粗筛：只把可能相关的内容交给 AI，省钱
 KEYWORDS = re.compile(
@@ -71,10 +63,13 @@ def _clean_link(link):
     return (link or "").split("?")[0]     # 去掉追踪参数，方便去重
 
 
-def fetch_posts():
+def fetch_posts(sources):
     items, seen = [], set()
-    for source, url in POST_FEEDS:
-        for e in _parse(url):
+    for src in sources:
+        if src["kind"] != "post_rss" or not src["enabled"]:
+            continue
+        source = source_label(src["key"])
+        for e in _parse(src["url"]):
             link, title = _clean_link(e.get("link")), (e.get("title") or "").strip()
             if not link or not title or link in seen or _too_old(e):
                 continue
@@ -95,11 +90,14 @@ def html_to_text(html):
     return text.strip()
 
 
-def fetch_articles():
-    """返回 [{"title", "url", "source", "text"}]，text 是正文纯文本"""
+def fetch_articles(sources):
+    """返回 [{"title", "url", "source", "html"}]"""
     articles, seen = [], set()
-    for source, url, deal_titles_only in ARTICLE_FEEDS:
-        for e in _parse(url):
+    for src in sources:
+        if src["kind"] != "article_rss" or not src["enabled"]:
+            continue
+        source, deal_titles_only = source_label(src["key"]), src.get("deal_titles_only")
+        for e in _parse(src["url"]):
             link, title = _clean_link(e.get("link")), (e.get("title") or "").strip()
             if not link or link in seen or _too_old(e):
                 continue
@@ -129,12 +127,15 @@ def load_article_text(article):
 
 
 # ---------------- Woot（官方 API） ----------------
-WOOT_FEEDS = ["Computers"]      # Woot 的分类，电脑类已包含显卡、硬盘、笔记本
 WOOT_MAX_PAGES = 10
 
 
-def fetch_woot():
-    """返回 [{"title", "url", "source"}]。标题里拼上成色和价格，交给 AI 解析"""
+def fetch_woot(sources):
+    """返回 [{"title", "url", "source"}]。标题里拼上成色和价格，交给 AI 解析。
+    来源的 url 字段填 Woot 分类名，比如 Computers"""
+    feeds = [src["url"] for src in sources if src["kind"] == "woot" and src["enabled"]]
+    if not feeds:
+        return []
     key = os.environ.get("WOOT_API_KEY")
     if not key:
         print("[info] 没有设置 WOOT_API_KEY，跳过 Woot")
@@ -142,7 +143,7 @@ def fetch_woot():
     headers = {"x-api-key": key, "Content-Type": "application/json"}
     offers = {}
     try:
-        for feed in WOOT_FEEDS:
+        for feed in feeds:
             page = 1
             while True:
                 r = requests.get(f"https://developer.woot.com/feed/{feed}", headers=headers,

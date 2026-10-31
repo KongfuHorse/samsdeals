@@ -5,8 +5,10 @@
   python run.py --dry-run          测试帖子型：用 sample_titles.txt，只用 Claude key，不写数据库
   python run.py --dry-run-article  测试文章型：用 sample_article.txt，只用 Claude key，不写数据库
 """
+import os
 import re
 import sys
+from datetime import datetime, timedelta, timezone
 
 from deal_filter import check_deal
 from parser import extract_from_article, parse_titles
@@ -110,18 +112,44 @@ def dry_run_article():
     return rows
 
 
+def _ts(text):
+    return datetime.fromisoformat(text.replace("Z", "+00:00")) if text else None
+
+
+def should_run(settings, last):
+    """GitHub 每 10 分钟唤醒一次；按后台设置的刷新间隔决定这次要不要真的抓取"""
+    if os.environ.get("GITHUB_EVENT_NAME") != "schedule":
+        return True, "手动触发"
+    if not last:
+        return True, "第一次运行"
+    requested = _ts(settings.get("refresh_requested_at"))
+    if requested and requested > _ts(last["started_at"] or last["finished_at"]):
+        return True, "后台请求立即刷新"
+    minutes = settings.get("refresh_minutes") or 30
+    elapsed = datetime.now(timezone.utc) - _ts(last["finished_at"])
+    if elapsed >= timedelta(minutes=minutes - 3):        # 留 3 分钟余量，GitHub 定时不太准
+        return True, f"距上次 {elapsed.seconds // 60} 分钟，刷新间隔 {minutes} 分钟"
+    return False, f"距上次 {elapsed.seconds // 60} 分钟，还没到刷新间隔 {minutes} 分钟"
+
+
 def main():
     import db
-    from datetime import datetime, timezone
     from sources import KEYWORDS, fetch_articles, fetch_posts, fetch_woot, load_article_text
 
+    ok, reason = should_run(db.load_settings(), db.last_run())
+    print(reason)
+    if not ok:
+        return
+
     started = datetime.now(timezone.utc).isoformat()
+    sources = db.load_sources()
+    print("启用的来源：", ", ".join(s["name"] for s in sources if s["enabled"]))
     rules, adjustments = db.load_rules()
     options = db.load_options()
     all_rows = []
 
     # 1. 帖子型（Slickdeals、Reddit、Woot）
-    posts = fetch_posts() + fetch_woot()
+    posts = fetch_posts(sources) + fetch_woot(sources)
     if posts:
         known = db.existing_urls([it["url"] for it in posts])
         new_posts = [it for it in posts if it["url"] not in known]
@@ -132,7 +160,7 @@ def main():
             all_rows += rows
 
     # 2. 文章型（每篇只读一次）
-    articles = fetch_articles()
+    articles = fetch_articles(sources)
     if articles:
         seen = db.seen_articles([a["url"] for a in articles])
         new_articles = [a for a in articles if a["url"] not in seen]
