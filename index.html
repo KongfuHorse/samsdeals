@@ -26,6 +26,7 @@
   .price { color:var(--good); font-weight:700; font-size:18px; }
   .meta { color:var(--muted); font-size:13px; }
   .empty { color:var(--muted); text-align:center; padding:40px 0; }
+  .status { color:var(--muted); font-size:12px; opacity:.8; margin:-6px 0 4px; }
 </style>
 </head>
 <body>
@@ -37,6 +38,7 @@
     </div>
     <a class="subscribe" id="subscribe" href="#" target="_blank" rel="noopener">邮件订阅</a>
   </header>
+  <div class="status" id="status"></div>
   <div class="tabs" id="tabs"></div>
   <div id="list"><div class="empty">加载中…</div></div>
 </div>
@@ -51,7 +53,7 @@ const DAYS = 14;                                        // 显示最近几天的
 
 const LABELS = { all:"全部", laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" };
 const COND = { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" };
-const SRC = { slickdeals:"Slickdeals", reddit:"Reddit", tomshardware:"Tom's Hardware", techradar:"TechRadar" };
+const SRC = { slickdeals:"Slickdeals", reddit:"Reddit", tomshardware:"Tom's Hardware", techradar:"TechRadar", woot:"Woot" };
 let deals = [], current = "all";
 
 if (SUBSCRIBE_URL) document.getElementById("subscribe").href = SUBSCRIBE_URL;
@@ -64,6 +66,12 @@ function ago(t) {
   if (m < 60) return m + " 分钟前";
   if (m < 1440) return Math.round(m / 60) + " 小时前";
   return Math.round(m / 1440) + " 天前";
+}
+
+function renderStatus(run) {
+  const el = document.getElementById("status");
+  if (!run) { el.textContent = ""; return; }
+  el.textContent = `上次抓取：${ago(run.finished_at)} · 检查了 ${run.checked} 条优惠 · 新增 ${run.new_deals} 条 · 本次达标 ${run.passed} 条 · 近 ${DAYS} 天达标共 ${deals.length} 条`;
 }
 
 function render() {
@@ -88,14 +96,20 @@ document.getElementById("tabs").addEventListener("click", e => {
 });
 
 const since = new Date(Date.now() - DAYS * 86400000).toISOString();
+const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
+  ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+  : { apikey: SUPABASE_ANON_KEY };
 if (SUPABASE_URL.includes("你的") || SUPABASE_ANON_KEY.includes("你的")) {
   document.getElementById("list").innerHTML = '<div class="empty">还没设置 Supabase：请修改网页代码里的 SUPABASE_URL 和 SUPABASE_ANON_KEY</div>';
 } else fetch(`${SUPABASE_URL}/rest/v1/deals?select=title,url,source,price,price_checked,threshold,category,condition,quantity,store,created_at&status=eq.passed&created_at=gte.${since}&order=created_at.desc&limit=300`,
-  { headers: SUPABASE_ANON_KEY.startsWith("eyJ")
-      ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-      : { apikey: SUPABASE_ANON_KEY } })
+  { headers: HEADERS })
   .then(r => r.ok ? r.json() : Promise.reject(r.status))
-  .then(rows => { deals = rows; render(); })
+  .then(rows => {
+    deals = rows; render();
+    // 读最近一次运行记录，显示在顶部
+    return fetch(`${SUPABASE_URL}/rest/v1/runs?select=finished_at,checked,new_deals,passed&order=finished_at.desc&limit=1`, { headers: HEADERS })
+      .then(r => r.ok ? r.json() : []).then(r => renderStatus(r[0]));
+  })
   .catch(() => { document.getElementById("list").innerHTML = '<div class="empty">加载失败，请检查网页里的 Supabase 设置</div>'; });
 </script>
 </body>

@@ -1,11 +1,12 @@
 -- ============================================
--- Deal 筛选网站：Supabase 表结构 + 规则（第 5 版）
+-- Deal 筛选网站：Supabase 表结构 + 规则（第 6 版）
 -- 用法：Supabase 后台 → SQL Editor → 粘贴全部 → Run
 -- 注意：开头几行会删除旧表重建。只在还没有正式数据时运行。
 -- ============================================
 
 drop table if exists deals;
 drop table if exists seen_articles;
+drop table if exists runs;
 drop table if exists price_adjustments;
 drop table if exists price_rules;
 drop table if exists field_options;
@@ -116,6 +117,18 @@ create table seen_articles (
   checked_at timestamptz not null default now()
 );
 alter table seen_articles enable row level security;
+
+-- 每次运行的记录（网站上显示"上次抓取"）
+create table runs (
+  id bigint generated always as identity primary key,
+  started_at timestamptz,
+  finished_at timestamptz not null default now(),
+  checked int not null default 0,     -- 本次检查的帖子/商品/文章数
+  new_deals int not null default 0,   -- 本次新增的 deal 数
+  passed int not null default 0       -- 本次新增的达标 deal 数
+);
+alter table runs enable row level security;
+create policy "public can read runs" on runs for select to anon using (true);
 
 -- --------------------------------------------
 -- 4. 访问权限

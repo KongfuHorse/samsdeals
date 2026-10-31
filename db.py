@@ -105,3 +105,8 @@ def mark_articles_seen(rows):
         timeout=30,
     )
     r.raise_for_status()
+
+
+def save_run(row):
+    r = requests.post(f"{_base()}/runs", headers=_headers({"Prefer": "return=minimal"}), json=row, timeout=30)
+    r.raise_for_status()

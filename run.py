@@ -112,14 +112,16 @@ def dry_run_article():
 
 def main():
     import db
-    from sources import KEYWORDS, fetch_articles, fetch_posts, load_article_text
+    from datetime import datetime, timezone
+    from sources import KEYWORDS, fetch_articles, fetch_posts, fetch_woot, load_article_text
 
+    started = datetime.now(timezone.utc).isoformat()
     rules, adjustments = db.load_rules()
     options = db.load_options()
     all_rows = []
 
-    # 1. 帖子型
-    posts = fetch_posts()
+    # 1. 帖子型（Slickdeals、Reddit、Woot）
+    posts = fetch_posts() + fetch_woot()
     if posts:
         known = db.existing_urls([it["url"] for it in posts])
         new_posts = [it for it in posts if it["url"] not in known]
@@ -152,6 +154,15 @@ def main():
     print(f"本次新增 {len(all_rows)} 条，其中达标 {len(passed)} 条")
     for r in passed:
         print("  ✓", r["title"])
+
+    # 记录这次运行，网站上显示"上次抓取"信息
+    db.save_run({
+        "started_at": started,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "checked": len(posts) + len(articles),     # 本次检查的帖子/商品数 + 文章数
+        "new_deals": len(all_rows),
+        "passed": len(passed),
+    })
 
 
 if __name__ == "__main__":

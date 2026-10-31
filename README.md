@@ -1,6 +1,6 @@
 # Deal 筛选网站 Demo
 
-每 30 分钟自动抓取 Slickdeals、r/buildapcsales，以及 Tom's Hardware 和 TechRadar 的 deal 文章，用 AI 读出商品信息，按你的价格规则筛选。
+每 30 分钟自动抓取 Slickdeals、r/buildapcsales、Woot（官方 API），以及 Tom's Hardware 和 TechRadar 的 deal 文章，用 AI 读出商品信息，按你的价格规则筛选。
 达标的 deal 显示在网站上；每天早上自动生成一封 MailerLite 邮件草稿，你检查后手动发送。
 
 ## 文件说明
@@ -46,6 +46,7 @@
 | ANTHROPIC_API_KEY | Claude API key |
 | SUPABASE_URL | Supabase Project URL |
 | SUPABASE_SERVICE_KEY | Supabase Secret key（sb_secret_ 开头） |
+| WOOT_API_KEY | Woot 开发者 API key（不填就跳过 Woot） |
 | MAILERLITE_API_KEY | MailerLite API key |
 | MAILERLITE_FROM_EMAIL | 发件邮箱 |
 | MAILERLITE_FROM_NAME | 发件人名字（可不填） |

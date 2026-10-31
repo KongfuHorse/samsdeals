@@ -2,9 +2,12 @@
 抓取 deal 来源。两种类型：
   - 帖子型（Slickdeals、Reddit）：一个标题 = 一个 deal，标题里有价格
   - 文章型（Tom's Hardware、TechRadar）：一篇文章里可能有多个 deal，价格在正文里
+  - Woot：用官方 API（需要 WOOT_API_KEY），每个商品当作一条帖子处理
 要加新来源：在 POST_FEEDS 或 ARTICLE_FEEDS 里加一行即可。
 """
 import calendar
+import json
+import os
 import re
 import time
 
@@ -23,7 +26,9 @@ POST_FEEDS = [
     ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5080&searcharea=deals&searchin=first&rss=1"),
     ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5070+ti&searcharea=deals&searchin=first&rss=1"),
     ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5070&searcharea=deals&searchin=first&rss=1"),
-    ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5060&searcharea=deals&searchin=first&rss=1"),    ("slickdeals", "https://slickdeals.net/newsearch.php?q=hard+drive&searcharea=deals&searchin=first&rss=1"),
+    ("slickdeals", "https://slickdeals.net/newsearch.php?q=rtx+5060&searcharea=deals&searchin=first&rss=1"),    ("slickdeals", "https://slickdeals.net/newsearch.php?q=alienware&searcharea=deals&searchin=first&rss=1"),
+    ("slickdeals", "https://slickdeals.net/newsearch.php?q=lenovo+outlet&searcharea=deals&searchin=first&rss=1"),
+    ("slickdeals", "https://slickdeals.net/newsearch.php?q=hard+drive&searcharea=deals&searchin=first&rss=1"),
     ("slickdeals", "https://slickdeals.net/newsearch.php?q=ssd&searcharea=deals&searchin=first&rss=1"),
     ("reddit", "https://www.reddit.com/r/buildapcsales/new/.rss"),
 ]
@@ -121,3 +126,67 @@ def load_article_text(article):
         except Exception as e:
             print(f"[warn] 打不开文章 {article['url']}: {e}")
     return text[:ARTICLE_MAX_CHARS]
+
+
+# ---------------- Woot（官方 API） ----------------
+WOOT_FEEDS = ["Computers"]      # Woot 的分类，电脑类已包含显卡、硬盘、笔记本
+WOOT_MAX_PAGES = 10
+
+
+def fetch_woot():
+    """返回 [{"title", "url", "source"}]。标题里拼上成色和价格，交给 AI 解析"""
+    key = os.environ.get("WOOT_API_KEY")
+    if not key:
+        print("[info] 没有设置 WOOT_API_KEY，跳过 Woot")
+        return []
+    headers = {"x-api-key": key, "Content-Type": "application/json"}
+    offers = {}
+    try:
+        for feed in WOOT_FEEDS:
+            page = 1
+            while True:
+                r = requests.get(f"https://developer.woot.com/feed/{feed}", headers=headers,
+                                 params={"page": page}, timeout=30)
+                r.raise_for_status()
+                d = r.json()
+                for o in d.get("Items", []):
+                    offers[o["OfferId"]] = o
+                if page >= min(d.get("TotalPages") or 1, WOOT_MAX_PAGES):
+                    break
+                page += 1
+    except Exception as e:
+        print(f"[warn] Woot 抓取失败: {e}")
+        return []
+
+    relevant = [o for o in offers.values() if not o.get("IsSoldOut") and KEYWORDS.search(o.get("Title", ""))]
+    items, variants = [], []
+    for o in relevant:
+        sp = o.get("SalePrice") or {}
+        if sp.get("Minimum") is not None and sp.get("Minimum") == sp.get("Maximum"):
+            cond = o.get("Condition") or "New"
+            items.append({"title": f"{o['Title']} - {cond} - ${sp['Minimum']}",
+                          "url": _clean_link(o["Url"]), "source": "woot"})
+        else:
+            variants.append(o)
+
+    # 有多个规格（价格是区间）的商品：查每个规格的价格，一个规格一条
+    for i in range(0, len(variants), 25):
+        chunk = variants[i:i + 25]
+        try:
+            r = requests.post("https://developer.woot.com/getoffers", headers=headers,
+                              data=json.dumps([o["OfferId"] for o in chunk]), timeout=30)
+            r.raise_for_status()
+            details = r.json()
+        except Exception as e:
+            print(f"[warn] Woot 规格查询失败: {e}")
+            continue
+        for offer in details:
+            base = _clean_link(offer.get("Url") or "")
+            for n, it in enumerate(offer.get("Items") or []):
+                if it.get("IsSoldOut") or it.get("SalePrice") is None:
+                    continue
+                attrs = ", ".join(str(a.get("Value")) for a in it.get("Attributes") or [] if a.get("Value"))
+                items.append({"title": f"{offer.get('Title')} ({attrs}) - ${it['SalePrice']}",
+                              "url": f"{base}#item-{n + 1}", "source": "woot"})
+    print(f"Woot：{len(offers)} 个商品，关键词粗筛后 {len(relevant)} 个，展开规格后 {len(items)} 条")
+    return items

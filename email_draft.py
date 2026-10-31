@@ -22,7 +22,7 @@ CATEGORY_LABELS = {
     "ssd": "固态硬盘", "hdd": "机械硬盘",
 }
 CONDITION_LABELS = {"new": "全新", "open_box": "开箱", "refurb": "翻新", "used": "二手"}
-SOURCE_LABELS = {"slickdeals": "Slickdeals", "reddit": "Reddit", "tomshardware": "Tom's Hardware", "techradar": "TechRadar"}
+SOURCE_LABELS = {"slickdeals": "Slickdeals", "reddit": "Reddit", "tomshardware": "Tom's Hardware", "techradar": "TechRadar", "woot": "Woot"}
 
 
 def money(x):
