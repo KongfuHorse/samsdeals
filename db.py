@@ -1,6 +1,6 @@
 """
 Supabase 读写（用 REST 接口，不需要额外安装 supabase 库）
-需要环境变量：SUPABASE_URL、SUPABASE_SERVICE_KEY
+需要环境变量：SUPABASE_URL、SUPABASE_SERVICE_KEY（Secret key，sb_secret_ 开头）
 """
 import os
 import requests
@@ -11,8 +11,10 @@ def _base():
 
 
 def _headers(extra=None):
-    key = os.environ["SUPABASE_SERVICE_KEY"]
-    h = {"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    key = os.environ["SUPABASE_SERVICE_KEY"]   # 新格式 sb_secret_... 或旧格式 service_role
+    h = {"apikey": key, "Content-Type": "application/json"}
+    if key.startswith("eyJ"):                  # 旧格式 key 还要放在 Authorization 里
+        h["Authorization"] = f"Bearer {key}"
     h.update(extra or {})
     return h
 

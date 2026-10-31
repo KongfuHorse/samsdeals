@@ -25,10 +25,10 @@
 ### 1. Supabase（数据库）
 1. supabase.com 注册，New project
 2. 左边 SQL Editor → 粘贴 schema.sql 全部内容 → Run
-3. 左边 Project Settings → API，记下 3 个值：
-   - Project URL
-   - anon public key（放网页里，公开没关系）
-   - service_role key（**保密**，只放 GitHub Secrets）
+3. 左边 Project Settings → API Keys，记下 3 个值：
+   - Project URL（在左上角 Connect 按钮里也能找到，格式 https://xxxx.supabase.co）
+   - Publishable key，sb_publishable_ 开头（放网页里，公开没关系）
+   - Secret key，sb_secret_ 开头（**保密**，只放 GitHub Secrets 的 SUPABASE_SERVICE_KEY）
 
 ### 2. MailerLite
 1. Subscribers → Groups → 建一个分组，比如 "Deal Alerts"，记下分组 ID（打开分组，网址里的数字）
@@ -45,7 +45,7 @@
 |---|---|
 | ANTHROPIC_API_KEY | Claude API key |
 | SUPABASE_URL | Supabase Project URL |
-| SUPABASE_SERVICE_KEY | Supabase service_role key |
+| SUPABASE_SERVICE_KEY | Supabase Secret key（sb_secret_ 开头） |
 | MAILERLITE_API_KEY | MailerLite API key |
 | MAILERLITE_FROM_EMAIL | 发件邮箱 |
 | MAILERLITE_FROM_NAME | 发件人名字（可不填） |
@@ -55,7 +55,7 @@
 5. 运行完点进去看日志，会显示抓到几条、达标几条
 
 ### 4. 网站
-1. 在 GitHub 里编辑 index.html，改顶部 3 个设置：SUPABASE_URL、SUPABASE_ANON_KEY、SUBSCRIBE_URL
+1. 在 GitHub 里编辑 index.html，改顶部 3 个设置：SUPABASE_URL、SUPABASE_ANON_KEY（填 publishable key）、SUBSCRIBE_URL
 2. Settings → Pages → Source 选 "Deploy from a branch"，Branch 选 main，保存
 3. 几分钟后网站地址会显示在这个页面上
 
