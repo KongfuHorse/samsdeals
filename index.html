@@ -3,114 +3,251 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deal 精选</title>
+<title>Sam's Deals · 精选电脑硬件优惠</title>
+<meta name="description" content="只收录低于价格线的电脑硬件优惠：游戏本、显卡、台式机、固态和机械硬盘。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&text=%E7%B2%BE%E9%80%89&display=block" rel="stylesheet">
 <style>
-  :root { --bg:#f6f6f4; --card:#fff; --text:#16181c; --muted:#6b7078; --line:#e4e4e0; --accent:#0b57d0; --good:#0a7a2f; }
+  :root {
+    --paper:#ECEFF1; --surface:#F8F9FA; --ink:#17202A; --muted:#5D6772; --faint:#8B949E;
+    --line:#D3D9DE; --seal:#BE3A2E; --track:#DDE2E6;
+    --num:"Archivo", "Noto Sans SC", system-ui, sans-serif;
+    --text:"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#121316; --card:#1c1e22; --text:#ececec; --muted:#9a9ea6; --line:#2c2f35; --accent:#8ab4f8; --good:#5fd38a; }
+    :root:not([data-theme="light"]) {
+      --paper:#111519; --surface:#181D22; --ink:#E6EAEE; --muted:#9AA3AD; --faint:#6C7580;
+      --line:#2A3138; --seal:#DE5A4C; --track:#262D34;
+    }
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; }
-  .wrap { max-width:860px; margin:0 auto; padding:24px 16px 60px; }
-  header { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
-  h1 { margin:0; font-size:26px; }
-  .sub { color:var(--muted); font-size:13px; }
-  .subscribe { background:var(--accent); color:#fff; padding:9px 16px; border-radius:8px; text-decoration:none; font-weight:600; }
-  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 18px; }
-  .tabs button { border:1px solid var(--line); background:var(--card); color:var(--text); padding:6px 14px; border-radius:999px; cursor:pointer; font:inherit; font-size:14px; }
-  .tabs button.on { background:var(--text); color:var(--bg); border-color:var(--text); }
-  .deal { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
-  .deal a { color:var(--accent); font-weight:600; text-decoration:none; }
-  .deal a:hover { text-decoration:underline; }
-  .row { margin-top:6px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
-  .price { color:var(--good); font-weight:700; font-size:18px; }
-  .meta { color:var(--muted); font-size:13px; }
-  .empty { color:var(--muted); text-align:center; padding:40px 0; }
-  .status { color:var(--muted); font-size:12px; opacity:.8; margin:-6px 0 4px; }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.7 var(--text); }
+  a { color:inherit; }
+  :focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:2px; }
+  .wrap { max-width:760px; margin:0 auto; padding:0 20px; }
+
+  /* 顶栏 */
+  .top { display:flex; align-items:center; justify-content:space-between; padding:28px 0 0; }
+  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; }
+  .seal { width:34px; height:34px; display:grid; place-items:center; background:var(--seal); color:#fff;
+          border-radius:5px; font:900 13px/1 "Noto Serif SC", serif; letter-spacing:.5px; writing-mode:vertical-rl;
+          transform:rotate(-4deg); }
+  .brand-name { font:700 19px/1 var(--num); font-stretch:112%; letter-spacing:-.2px; }
+  .subscribe { font-size:14px; font-weight:500; text-decoration:none; padding:7px 14px; border:1.5px solid var(--ink); border-radius:999px; }
+  .subscribe:hover { background:var(--ink); color:var(--paper); }
+
+  /* 首屏：分数 */
+  .hero { display:grid; grid-template-columns:auto 1fr; gap:36px; align-items:center; padding:72px 0 56px; }
+  .ratio { font-family:var(--num); font-stretch:125%; font-weight:800; line-height:.9; text-align:center;
+           font-variant-numeric:tabular-nums; min-width:150px; }
+  .ratio .kept { font-size:96px; display:block; }
+  .ratio .bar { display:block; height:5px; background:var(--ink); margin:12px 0 14px; border-radius:3px; }
+  .ratio .seen { font-size:44px; display:block; color:var(--faint); font-weight:600; }
+  .hero h1 { font-size:30px; line-height:1.35; margin:0 0 12px; font-weight:700; letter-spacing:-.3px; }
+  .hero p { margin:0; color:var(--muted); max-width:30em; }
+
+  /* 分类 */
+  .filters { display:flex; gap:22px; flex-wrap:wrap; border-bottom:1px solid var(--line); margin-bottom:8px; }
+  .filters button { appearance:none; background:none; border:0; padding:10px 0; margin-bottom:-1px; font:500 15px var(--text);
+                    color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
+  .filters button[aria-pressed="true"] { color:var(--ink); border-bottom-color:var(--ink); }
+  .filters button span { font-family:var(--num); color:var(--faint); margin-left:4px; font-size:13px; }
+
+  /* deal 列表 */
+  .deal { display:grid; grid-template-columns:1fr auto; gap:6px 28px; padding:30px 0 32px; border-bottom:1px solid var(--line); }
+  .deal-title { font-size:18px; font-weight:500; line-height:1.5; margin:0; }
+  .deal-title a { text-decoration:none; }
+  .deal-title a:hover { text-decoration:underline; text-underline-offset:3px; }
+  .facts { grid-column:1; color:var(--muted); font-size:14px; display:flex; flex-wrap:wrap; gap:4px 16px; }
+  .price-col { grid-column:2; grid-row:1 / span 2; text-align:right; }
+  .price { font:800 34px/1 var(--num); font-stretch:115%; font-variant-numeric:tabular-nums; letter-spacing:-.5px; white-space:nowrap; }
+  .price small { font-size:15px; font-weight:600; color:var(--muted); margin-left:2px; }
+  .below { font-size:14px; color:var(--muted); margin-top:8px; white-space:nowrap; }
+  .below b { color:var(--ink); font-family:var(--num); }
+
+  /* 价格线 */
+  .line { grid-column:1 / -1; margin-top:16px; }
+  .track { position:relative; height:6px; background:var(--track); border-radius:3px; }
+  .fill { position:absolute; left:0; top:0; bottom:0; background:var(--ink); border-radius:3px; }
+  .mark { position:absolute; top:-7px; width:2px; height:20px; background:var(--seal); }
+  .line-labels { display:flex; justify-content:space-between; gap:12px; font:500 12px/1 var(--num); color:var(--faint); margin-top:9px; }
+  .line-labels .std { color:var(--seal); }
+
+  .empty { padding:56px 0; color:var(--muted); }
+  .empty strong { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; }
+
+  /* 说明 */
+  .about { margin:64px 0 0; padding:32px 0 0; border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(3, 1fr); gap:28px; }
+  .about h2 { font-size:15px; margin:0 0 6px; }
+  .about p { margin:0; font-size:14px; color:var(--muted); }
+  footer { padding:40px 0 56px; color:var(--faint); font-size:13px; }
+
+  @media (max-width:640px) {
+    .hero { grid-template-columns:1fr; gap:20px; padding:48px 0 40px; }
+    .ratio { text-align:left; min-width:0; display:flex; align-items:baseline; gap:12px; }
+    .ratio .kept { font-size:72px; }
+    .ratio .bar { width:5px; height:56px; margin:0; align-self:center; transform:skewX(-18deg); }
+    .ratio .seen { font-size:40px; }
+    .hero h1 { font-size:24px; }
+    .deal { grid-template-columns:1fr; }
+    .price-col { grid-column:1; grid-row:auto; text-align:left; margin-top:10px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+    .below { margin-top:0; }
+    .about { grid-template-columns:1fr; gap:20px; }
+  }
+  @media (prefers-reduced-motion:no-preference) {
+    .fill { transition:width .7s cubic-bezier(.2,.7,.2,1); }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div>
-      <h1>Deal 精选</h1>
-      <div class="sub">只显示达到价格标准的电脑硬件 deal · 价格以商家页面为准</div>
-    </div>
+  <header class="top">
+    <a class="brand" href="./" aria-label="Sam's Deals 首页"><span class="seal" aria-hidden="true">精选</span><span class="brand-name">Sam's Deals</span></a>
     <a class="subscribe" id="subscribe" href="#" target="_blank" rel="noopener">邮件订阅</a>
   </header>
-  <div class="status" id="status"></div>
-  <div class="tabs" id="tabs"></div>
-  <div id="list"><div class="empty">加载中…</div></div>
+
+  <section class="hero" aria-labelledby="heroTitle">
+    <div class="ratio" id="ratio" aria-hidden="true"><span class="kept" id="kept">–</span><span class="bar"></span><span class="seen" id="seen">–</span></div>
+    <div>
+      <h1 id="heroTitle">大多数优惠，其实不够便宜。</h1>
+      <p id="heroText">我们给每类电脑硬件定了一条价格线。只有低于这条线的优惠，才会出现在这里。</p>
+    </div>
+  </section>
+
+  <nav class="filters" id="filters" aria-label="按品类筛选"></nav>
+  <main id="list" aria-live="polite"><div class="empty">正在加载…</div></main>
+
+  <section class="about" aria-label="说明">
+    <div><h2>价格线</h2><p>每个型号都有一条标准价，比如 RTX 5090 游戏本是 $3,500。开箱、翻新会更严，ROG、Alienware 会适当放宽。</p></div>
+    <div><h2>自动检查</h2><p>持续检查 Slickdeals、Reddit、Woot、Tom's Hardware 等来源，用 AI 读出型号、成色和价格，再和价格线对比。</p></div>
+    <div><h2>以商家为准</h2><p>好价格通常很快就没了。下单前请在商家页面确认价格、成色和库存。</p></div>
+  </section>
+
+  <footer id="status">&nbsp;</footer>
 </div>
 
 <script>
 // ===== 设置（只改这里）=====
 const SUPABASE_URL = "https://pmjmexfueofdaubcumgk.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_l02lU8RFOe5RwSkO-YasHw_MBTgd-av";      // sb_publishable_ 开头，公开 key，可以放在网页里
-const SUBSCRIBE_URL = "";                               // MailerLite 订阅表单链接
-const DAYS = 14;                                        // 显示最近几天的 deal
+const SUPABASE_ANON_KEY = "sb_publishable_l02lU8RFOe5RwSkO-YasHw_MBTgd-av";   // 公开 key，可以放在网页里
+const SUBSCRIBE_URL = "";                                                       // MailerLite 订阅表单链接
+const DAYS = 14;                                                                 // 显示最近几天的 deal
 // ==========================
 
-const LABELS = { all:"全部", laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" };
+const LABELS = { laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" };
 const COND = { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" };
 const SRC = { slickdeals:"Slickdeals", reddit:"Reddit", tomshardware:"Tom's Hardware", techradar:"TechRadar", woot:"Woot" };
+const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
+  ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
+  : { apikey: SUPABASE_ANON_KEY };
 let deals = [], current = "all";
 
-if (SUBSCRIBE_URL) document.getElementById("subscribe").href = SUBSCRIBE_URL;
-else document.getElementById("subscribe").style.display = "none";
+const $ = id => document.getElementById(id);
+if (SUBSCRIBE_URL) $("subscribe").href = SUBSCRIBE_URL; else $("subscribe").hidden = true;
 
-const money = x => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+const money = (x, cents) => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 });
 function ago(t) {
-  const m = Math.round((Date.now() - new Date(t)) / 60000);
+  const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000));
+  if (m < 1) return "刚刚";
   if (m < 60) return m + " 分钟前";
   if (m < 1440) return Math.round(m / 60) + " 小时前";
   return Math.round(m / 1440) + " 天前";
 }
-
-function renderStatus(run) {
-  const el = document.getElementById("status");
-  if (!run) { el.textContent = ""; return; }
-  el.textContent = `上次抓取：${ago(run.finished_at)} · 检查了 ${run.checked} 条优惠 · 新增 ${run.new_deals} 条 · 本次达标 ${run.passed} 条 · 近 ${DAYS} 天达标共 ${deals.length} 条`;
+// 标题清理：去掉开头的 [GPU] 这类标签、结尾的价格和商家，信息已经单独显示
+function cleanTitle(t) {
+  return String(t || "")
+    .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")
+    .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")
+    .replace(/\s+[-–]?\s*\$[\d,]+(\.\d+)?\s*(\+.*|after.*|w\/.*|@.*|\(.*\))?$/i, "")
+    .replace(/\s+@\s+[\w .'&-]+$/, "")
+    .trim();
 }
 
-function render() {
-  const cats = ["all", ...Object.keys(LABELS).filter(c => c !== "all" && deals.some(d => d.category === c))];
-  document.getElementById("tabs").innerHTML = cats.map(c =>
-    `<button class="${c === current ? "on" : ""}" data-c="${c}">${LABELS[c]}${c === "all" ? "" : " " + deals.filter(d => d.category === c).length}</button>`
-  ).join("");
-  const shown = current === "all" ? deals : deals.filter(d => d.category === current);
-  document.getElementById("list").innerHTML = shown.length ? shown.map(d => {
-    const compare = d.category === "hdd" ? `每 TB ${money(d.price_checked)}（标准 ${money(d.threshold)}）` : `标准 ${money(d.threshold)}`;
-    const tags = [LABELS[d.category], COND[d.condition], d.quantity > 1 ? d.quantity + " 件装" : "", d.store, SRC[d.source] ? "来自 " + SRC[d.source] : "", ago(d.created_at)].filter(Boolean);
-    return `<div class="deal">
-      <a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a>
-      <div class="row"><span class="price">${money(d.price)}</span><span class="meta">${compare}</span></div>
-      <div class="meta">${tags.map(esc).join(" · ")}</div>
+function renderFilters() {
+  const cats = Object.keys(LABELS).filter(c => deals.some(d => d.category === c));
+  const items = [["all", "全部", deals.length], ...cats.map(c => [c, LABELS[c], deals.filter(d => d.category === c).length])];
+  $("filters").innerHTML = items.map(([c, label, n]) =>
+    `<button type="button" data-c="${c}" aria-pressed="${c === current}">${label}<span>${n}</span></button>`).join("");
+}
+
+function priceLine(d) {
+  // 刻度：从比 deal 价再低一点，到标准价的 105%，差距大小一眼能看出来
+  const std = Number(d.threshold), p = Number(d.price_checked);
+  const lo = Math.min(std * 0.7, p * 0.9), hi = std * 1.05;
+  const pos = v => Math.min(100, Math.max(0, (v - lo) / (hi - lo) * 100));
+  const fmt = v => d.category === "hdd" ? money(v, true) + "/TB" : money(v);
+  return `<div class="line" aria-hidden="true">
+      <div class="track"><div class="fill" style="width:${pos(p)}%"></div><div class="mark" style="left:calc(${pos(std)}% - 1px)"></div></div>
+      <div class="line-labels"><span>这个价 ${fmt(p)}</span><span class="std">价格线 ${fmt(std)}</span></div>
     </div>`;
-  }).join("") : `<div class="empty">最近 ${DAYS} 天没有达标的 deal</div>`;
 }
 
-document.getElementById("tabs").addEventListener("click", e => {
-  if (e.target.dataset.c) { current = e.target.dataset.c; render(); }
+function renderList() {
+  const shown = current === "all" ? deals : deals.filter(d => d.category === current);
+  if (!shown.length) {
+    $("list").innerHTML = `<div class="empty"><strong>最近 ${DAYS} 天没有过线的优惠</strong>价格线定得比较严，有符合的会第一时间出现在这里。${SUBSCRIBE_URL ? `想第一时间知道，可以<a href="${esc(SUBSCRIBE_URL)}" target="_blank" rel="noopener">订阅邮件</a>。` : ""}</div>`;
+    return;
+  }
+  $("list").innerHTML = shown.map(d => {
+    const std = Number(d.threshold), p = Number(d.price_checked);
+    const pct = Math.round((1 - p / std) * 100);
+    const saveText = d.category === "hdd" ? `每 TB 低 <b>${money(std - p, true)}</b>` : `比价格线低 <b>${money(Math.round(std - p))}</b>`;
+    const facts = [LABELS[d.category], COND[d.condition], d.quantity > 1 ? `${d.quantity} 件装` : "", d.store,
+                   SRC[d.source] ? `来自 ${SRC[d.source]}` : "", ago(d.created_at)].filter(Boolean);
+    return `<article class="deal">
+      <h2 class="deal-title"><a href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">${esc(cleanTitle(d.title))}</a></h2>
+      <div class="price-col">
+        <div class="price">${money(d.price)}</div>
+        <div class="below">${saveText}，${pct}%</div>
+      </div>
+      <div class="facts">${facts.map(f => `<span>${esc(f)}</span>`).join("")}</div>
+      ${priceLine(d)}
+    </article>`;
+  }).join("");
+}
+
+function renderHero(evaluated) {
+  const kept = deals.length;
+  $("kept").textContent = kept;
+  $("seen").textContent = evaluated || "–";
+  $("ratio").setAttribute("aria-hidden", "false");
+  $("ratio").setAttribute("aria-label", `${evaluated} 条里留下 ${kept} 条`);
+  $("heroText").textContent = evaluated
+    ? `近 ${DAYS} 天，我们评估了 ${evaluated} 条电脑硬件优惠，只有 ${kept} 条低于价格线。剩下的，都不够便宜。`
+    : `我们给每类电脑硬件定了一条价格线。只有低于这条线的优惠，才会出现在这里。`;
+}
+
+$("filters").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  current = b.dataset.c; renderFilters(); renderList();
 });
 
-const since = new Date(Date.now() - DAYS * 86400000).toISOString();
-const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
-  ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
-  : { apikey: SUPABASE_ANON_KEY };
-if (SUPABASE_URL.includes("你的") || SUPABASE_ANON_KEY.includes("你的")) {
-  document.getElementById("list").innerHTML = '<div class="empty">还没设置 Supabase：请修改网页代码里的 SUPABASE_URL 和 SUPABASE_ANON_KEY</div>';
-} else fetch(`${SUPABASE_URL}/rest/v1/deals?select=title,url,source,price,price_checked,threshold,category,condition,quantity,store,created_at&status=eq.passed&created_at=gte.${since}&order=created_at.desc&limit=300`,
-  { headers: HEADERS })
-  .then(r => r.ok ? r.json() : Promise.reject(r.status))
-  .then(rows => {
-    deals = rows; render();
-    // 读最近一次运行记录，显示在顶部
-    return fetch(`${SUPABASE_URL}/rest/v1/runs?select=finished_at,checked,new_deals,passed&order=finished_at.desc&limit=1`, { headers: HEADERS })
-      .then(r => r.ok ? r.json() : []).then(r => renderStatus(r[0]));
-  })
-  .catch(() => { document.getElementById("list").innerHTML = '<div class="empty">加载失败，请检查网页里的 Supabase 设置</div>'; });
+async function get(path) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: HEADERS });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+(async () => {
+  const since = new Date(Date.now() - DAYS * 86400000).toISOString();
+  try {
+    const [rows, runs] = await Promise.all([
+      get(`deals?select=title,url,source,price,price_checked,threshold,category,condition,quantity,store,created_at&status=eq.passed&created_at=gte.${since}&order=created_at.desc&limit=300`),
+      get(`runs?select=finished_at,new_deals&finished_at=gte.${since}&order=finished_at.desc&limit=5000`).catch(() => []),
+    ]);
+    deals = rows;
+    const evaluated = Math.max(runs.reduce((s, r) => s + (r.new_deals || 0), 0), deals.length);
+    renderHero(runs.length ? evaluated : 0);
+    renderFilters(); renderList();
+    $("status").textContent = runs.length ? `上次检查在 ${ago(runs[0].finished_at)}。价格以商家页面为准。` : "价格以商家页面为准。";
+  } catch (e) {
+    $("list").innerHTML = `<div class="empty"><strong>暂时读不到数据</strong>请稍后刷新页面。</div>`;
+  }
+})();
 </script>
 </body>
 </html>
