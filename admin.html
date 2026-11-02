@@ -84,6 +84,20 @@
   #toast.show { opacity:1; }
   #toast.err { background:var(--bad); color:#fff; }
   .hidden { display:none !important; }
+  .dl { list-style:none; margin:0; padding:0; }
+  .dl li { display:grid; grid-template-columns:1fr auto; gap:4px 16px; padding:12px 0; border-bottom:1px solid var(--line); }
+  .dl li:last-child { border-bottom:0; }
+  .dl .t a { color:var(--text); font-weight:600; text-decoration:none; }
+  .dl .t a:hover { text-decoration:underline; }
+  .dl .m { grid-column:1; color:var(--muted); font-size:12px; display:flex; flex-wrap:wrap; gap:2px 12px; }
+  .dl .p { grid-column:2; grid-row:1; text-align:right; font-weight:700; white-space:nowrap; }
+  .dl .p small { display:block; font-weight:400; color:var(--muted); font-size:12px; }
+  .dl .a { grid-column:2; grid-row:2; display:flex; gap:6px; justify-content:flex-end; }
+  .reason { color:var(--bad); }
+  .count { display:inline-block; min-width:18px; padding:0 6px; margin-left:4px; border-radius:999px; background:var(--bad); color:#fff; font-size:11px; line-height:18px; text-align:center; }
+  .sub { margin:18px 0 4px; display:flex; align-items:baseline; gap:8px; }
+  .sub h3 { font-size:14px; margin:0; }
+  @media (max-width:640px) { .dl li { grid-template-columns:1fr; } .dl .p, .dl .a { grid-column:1; grid-row:auto; text-align:left; justify-content:flex-start; } }
   .help { background:var(--accent-soft); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px; }
   .help ol { margin:6px 0 0; padding-left:20px; }
 </style>
@@ -116,15 +130,38 @@
   </header>
 
   <div class="tabs" id="tabs">
-    <button data-tab="rules" class="on">价格规则</button>
+    <button data-tab="deals" class="on">优惠管理<span class="count hidden" id="reviewCount"></span></button>
+    <button data-tab="rules">价格规则</button>
     <button data-tab="adjustments">调整规则</button>
     <button data-tab="options">下拉选项</button>
     <button data-tab="sources">优惠来源</button>
     <button data-tab="refresh">刷新设置</button>
   </div>
 
+  <!-- 优惠管理 -->
+  <section id="tab-deals" class="card">
+    <h2>优惠管理</h2>
+    <div class="muted small">达标但价格低得离谱、或者认不出商家的优惠，会先放进"待审核"，你通过后才会出现在网站上。</div>
+    <div class="row" style="margin:12px 0 4px">
+      <label class="small">低于价格线超过多少就送审<br>
+        <select id="reviewPct"></select></label>
+      <label class="small" style="display:flex; align-items:center; gap:8px; padding-bottom:6px">
+        <span class="switch"><input type="checkbox" id="reviewStore"><span></span></span>商家不明也送审（Slickdeals 和 Woot 除外）</label>
+      <button class="primary" id="saveReview">保存</button>
+    </div>
+
+    <div class="sub"><h3>待审核</h3><span class="muted small" id="nReview"></span></div>
+    <ul class="dl" id="listReview"></ul>
+    <div class="sub"><h3>正在展示</h3><span class="muted small" id="nPassed"></span></div>
+    <ul class="dl" id="listPassed"></ul>
+    <div class="sub"><h3>已隐藏</h3><span class="muted small" id="nHidden"></span></div>
+    <ul class="dl" id="listHidden"></ul>
+    <div class="sub"><h3>最近删除</h3><span class="muted small">30 天内，可以恢复</span></div>
+    <ul class="dl" id="listRemoved"></ul>
+  </section>
+
   <!-- 价格规则 -->
-  <section id="tab-rules" class="card">
+  <section id="tab-rules" class="card hidden">
     <div class="toolbar">
       <div>
         <h2>价格规则</h2>
@@ -325,7 +362,7 @@ async function reload() {
 $("tabs").addEventListener("click", e => {
   const tab = e.target.dataset.tab; if (!tab) return;
   [...$("tabs").children].forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
-  ["rules", "adjustments", "options", "sources", "refresh"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== tab));
+  ["deals", "rules", "adjustments", "options", "sources", "refresh"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== tab));
 });
 
 function optionsOf(field) { return data.options.filter(o => o.field === field && o.active); }
@@ -339,9 +376,63 @@ function markDirty(tr) { tr.classList.add("dirty"); }
 
 function renderAll() {
   const s = data.deal_stats || {}, last = data.runs[0];
-  $("summary").textContent = `规则 ${data.rules.length} 条 · 来源启用 ${data.sources.filter(x => x.enabled).length}/${data.sources.length} · 上次抓取 ${last ? ago(last.finished_at) : "—"} · 达标 deal ${s.passed || 0} 条`;
-  renderRules(); renderAdjustments(); renderOptions(); renderSources(); renderRefresh();
+  $("summary").textContent = `正在展示 ${s.passed || 0} 条，待审核 ${s.review || 0} 条。上次抓取：${last ? ago(last.finished_at) : "还没有记录"}。`;
+  renderDeals(); renderRules(); renderAdjustments(); renderOptions(); renderSources(); renderRefresh();
 }
+
+// ---------- 优惠管理 ----------
+const CAT_NAMES = { laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" };
+const COND_NAMES = { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" };
+const ACTIONS = {
+  review:  [["passed", "通过", "primary"], ["removed", "拒绝", "danger"]],
+  passed:  [["hidden", "隐藏", ""], ["removed", "删除", "danger"]],
+  hidden:  [["passed", "恢复展示", "primary"], ["removed", "删除", "danger"]],
+  removed: [["passed", "恢复展示", ""]],
+};
+const DONE_TEXT = { passed: "已展示", hidden: "已隐藏", removed: "已删除" };
+function usd(x, cents) { return "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 }); }
+function dealItem(d) {
+  const hdd = d.category === "hdd";
+  const pct = d.threshold ? Math.round((1 - d.price_checked / d.threshold) * 100) : null;
+  const reason = (d.adjustments_applied || "").split("; ").find(x => x.startsWith("待审核")) || "";
+  const meta = [CAT_NAMES[d.category], COND_NAMES[d.condition], d.store || "商家不明", d.source, ago(d.created_at)].filter(Boolean);
+  return `<li>
+    <div class="t"><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></div>
+    <div class="p">${usd(d.price, true)}<small>${hdd ? "每 TB " + usd(d.price_checked, true) + "，" : ""}价格线 ${hdd ? usd(d.threshold, true) : usd(d.threshold)}${pct != null ? "，低 " + pct + "%" : ""}</small></div>
+    <div class="m">${meta.map(x => `<span>${esc(x)}</span>`).join("")}${reason ? `<span class="reason">${esc(reason.replace("待审核：", "送审原因："))}</span>` : ""}</div>
+    <div class="a">${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
+  </li>`;
+}
+function renderDeals() {
+  const st = data.settings;
+  $("reviewPct").innerHTML = [20, 30, 40, 50, 60, 70, 80].map(v => `<option value="${v}" ${v === st.review_discount_pct ? "selected" : ""}>${v}%</option>`).join("");
+  $("reviewStore").checked = !!st.review_unknown_store;
+  const by = s => data.deals.filter(d => d.status === s);
+  const fill = (id, nId, list, empty) => {
+    $(id).innerHTML = list.length ? list.map(dealItem).join("") : `<li class="muted small" style="display:block">${empty}</li>`;
+    if (nId) $(nId).textContent = list.length + " 条";
+  };
+  fill("listReview", "nReview", by("review"), "没有待审核的优惠");
+  fill("listPassed", "nPassed", by("passed"), "网站上现在没有展示中的优惠");
+  fill("listHidden", "nHidden", by("hidden"), "没有隐藏的优惠");
+  fill("listRemoved", null, by("removed"), "最近没有删除的优惠");
+  const n = by("review").length;
+  $("reviewCount").textContent = n; $("reviewCount").classList.toggle("hidden", !n);
+}
+$("tab-deals").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-deal]"); if (!b) return;
+  const st = b.dataset.st;
+  if (st === "removed" && !confirm("删除后网站上不再显示，以后抓取也不会重新加回来。30 天内可以在\"最近删除\"里恢复。确定删除？")) return;
+  b.disabled = true;
+  try { await rpc("admin_set_deal_status", { p_token: token, p_id: Number(b.dataset.deal), p_status: st }); toast(DONE_TEXT[st]); await reload(); }
+  catch (err) { b.disabled = false; toast("操作失败：" + err.message, true); }
+});
+$("saveReview").addEventListener("click", async () => {
+  try {
+    await rpc("admin_save_review_settings", { p_token: token, p_discount_pct: Number($("reviewPct").value), p_unknown_store: $("reviewStore").checked });
+    toast("已保存，下次抓取开始生效"); await reload();
+  } catch (e) { toast("保存失败：" + e.message, true); }
+});
 
 // ---------- 价格规则 ----------
 function ruleRow(r) {

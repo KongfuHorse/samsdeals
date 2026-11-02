@@ -28,6 +28,20 @@ DB_COLUMNS = ["title", "url", "article_url", "source", "store", "price", "catego
 
 GPU_CATEGORIES = ("laptop", "desktop", "graphics_card")
 
+# 审核规则（正式运行时从后台设置读取）
+REVIEW = {"discount_pct": 50, "unknown_store": True}
+TRUSTED_SOURCES = ("slickdeals", "woot")   # 这两个来源的商家信息可靠，不因"商家不明"送审
+
+
+def needs_review(row):
+    """达标的 deal 再检查一遍：低得离谱或商家不明，先送人工审核"""
+    std, price = row.get("threshold"), row.get("price_checked")
+    if std and price is not None and price < std * (1 - REVIEW["discount_pct"] / 100):
+        return f"比价格线低超过 {REVIEW['discount_pct']}%"
+    if REVIEW["unknown_store"] and not row.get("store") and row.get("source") not in TRUSTED_SOURCES:
+        return "商家不明"
+    return None
+
 
 def judge(row, rules, adjustments, options, text):
     """AI 解析后再用程序检查一遍，然后按规则筛选。text = 原始标题或文章正文"""
@@ -42,6 +56,11 @@ def judge(row, rules, adjustments, options, text):
         row["status"] = "other"                     # 没有 RTX 50 系显卡的电脑/显卡，不在范围内
     else:
         row.update(check_deal(row, rules, adjustments))
+        if row.get("status") == "passed":
+            reason = needs_review(row)
+            if reason:
+                row["status"] = "review"
+                row["adjustments_applied"] = "; ".join(x for x in [row.get("adjustments_applied"), "待审核：" + reason] if x)
     return row
 
 
@@ -50,10 +69,12 @@ def process_posts(items, options, rules, adjustments):
     rows = []
     for it, p in zip(items, parsed):
         row = dict(it)
+        if it.get("source") == "woot":
+            row["store"] = "Woot"
         if p is None:
             row["status"] = "need_info"
         else:
-            row.update(p)
+            row.update({k: v for k, v in p.items() if not (k == "store" and row.get("store"))})
             judge(row, rules, adjustments, options, it["title"])
         rows.append(row)
     return rows
@@ -136,7 +157,10 @@ def main():
     import db
     from sources import KEYWORDS, fetch_articles, fetch_posts, fetch_woot, load_article_text
 
-    ok, reason = should_run(db.load_settings(), db.last_run())
+    settings = db.load_settings()
+    REVIEW["discount_pct"] = settings.get("review_discount_pct") or 50
+    REVIEW["unknown_store"] = settings.get("review_unknown_store", True)
+    ok, reason = should_run(settings, db.last_run())
     print(reason)
     if not ok:
         return
@@ -179,9 +203,12 @@ def main():
             all_rows += rows
 
     passed = [r for r in all_rows if r.get("status") == "passed"]
-    print(f"本次新增 {len(all_rows)} 条，其中达标 {len(passed)} 条")
+    review = [r for r in all_rows if r.get("status") == "review"]
+    print(f"本次新增 {len(all_rows)} 条，其中达标 {len(passed)} 条，待审核 {len(review)} 条")
     for r in passed:
         print("  ✓", r["title"])
+    for r in review:
+        print("  ?", r["title"], "|", r.get("adjustments_applied"))
 
     # 记录这次运行，网站上显示"上次抓取"信息
     db.save_run({

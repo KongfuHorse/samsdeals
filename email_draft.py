@@ -10,6 +10,7 @@
 """
 import html
 import os
+import re
 import sys
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -25,52 +26,106 @@ CONDITION_LABELS = {"new": "全新", "open_box": "开箱", "refurb": "翻新", "
 SOURCE_LABELS = {"slickdeals": "Slickdeals", "reddit": "Reddit", "tomshardware": "Tom's Hardware", "techradar": "TechRadar", "woot": "Woot"}
 
 
-def money(x):
-    return f"${x:,.2f}".replace(".00", "")
+SITE_URL = "https://kongfuhorse.github.io/samsdeals/"
+INK, MUTED, FAINT, LINE, TRACK, SEAL, PAPER = "#17202A", "#5D6772", "#8B949E", "#D3D9DE", "#DDE2E6", "#BE3A2E", "#ECEFF1"
+FONT = "-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',Helvetica,Arial,sans-serif"
+
+
+def money(x, cents=False):
+    x = float(x)
+    return f"${x:,.2f}" if cents or x != int(x) else f"${x:,.0f}"
+
+
+def clean_title(t):
+    """和网站一样：去掉开头的 [GPU] 标签和结尾的价格、商家"""
+    t = re.sub(r"^\s*\[[^\]]{1,20}\]\s*", "", t or "")
+    t = re.sub(r"^\s*\$[\d,.]+\*?\s*\|\s*", "", t)
+    t = re.sub(r"\s+[-–]?\s*\$[\d,]+(\.\d+)?\s*(\+.*|after.*|w/.*|@.*|\(.*\))?$", "", t, flags=re.I)
+    t = re.sub(r"\s+@\s+[\w .'&-]+$", "", t)
+    return t.strip()
+
+
+def price_line(d):
+    """价格线：用两格表格画进度条，邮件里也能正常显示"""
+    std, p = float(d["threshold"]), float(d["price_checked"])
+    lo, hi = min(std * 0.7, p * 0.9), std * 1.05
+    pos = lambda v: max(1, min(99, round((v - lo) / (hi - lo) * 100)))
+    a, b = pos(p), pos(std)
+    unit = "/TB" if d.get("category") == "hdd" else ""
+    cents = d.get("category") == "hdd"
+    return f"""
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;">
+  <tr>
+    <td width="{a}%" style="height:6px;background:{INK};font-size:0;line-height:0;">&nbsp;</td>
+    <td width="{b - a}%" style="height:6px;background:{TRACK};font-size:0;line-height:0;">&nbsp;</td>
+    <td width="2" style="height:6px;background:{SEAL};font-size:0;line-height:0;">&nbsp;</td>
+    <td style="height:6px;background:{TRACK};font-size:0;line-height:0;">&nbsp;</td>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">
+  <tr>
+    <td style="font:12px {FONT};color:{FAINT};">这个价 {money(p, cents)}{unit}</td>
+    <td align="right" style="font:12px {FONT};color:{SEAL};">价格线 {money(std, cents)}{unit}</td>
+  </tr>
+</table>"""
+
+
+def deal_block(d):
+    std, p = float(d["threshold"]), float(d["price_checked"])
+    pct = round((1 - p / std) * 100)
+    hdd = d.get("category") == "hdd"
+    save = f"每 TB 低 {money(std - p, True)}" if hdd else f"比价格线低 {money(round(std - p))}"
+    facts = [CATEGORY_LABELS.get(d.get("category"), ""), CONDITION_LABELS.get(d.get("condition"), "")]
+    if (d.get("quantity") or 1) > 1:
+        facts.append(f'{d["quantity"]} 件装')
+    if d.get("store"):
+        facts.append(html.escape(d["store"]))
+    if d.get("source") in SOURCE_LABELS:
+        facts.append("来自 " + SOURCE_LABELS[d["source"]])
+    facts_html = "&nbsp;&nbsp;&nbsp;".join(f for f in facts if f)
+    return f"""
+<tr><td style="padding:26px 0;border-bottom:1px solid {LINE};">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td valign="top" style="font:500 16px/1.5 {FONT};color:{INK};padding-right:16px;">
+      <a href="{html.escape(d['url'])}" style="color:{INK};text-decoration:none;">{html.escape(clean_title(d['title']))}</a>
+      <div style="font:13px/1.6 {FONT};color:{MUTED};margin-top:6px;">{facts_html}</div>
+    </td>
+    <td valign="top" align="right" style="white-space:nowrap;">
+      <div style="font:800 26px/1 {FONT};color:{INK};letter-spacing:-0.3px;">{money(d['price'])}</div>
+      <div style="font:13px {FONT};color:{MUTED};margin-top:6px;">{save}，{pct}%</div>
+    </td>
+  </tr></table>
+  {price_line(d)}
+  <div style="margin-top:12px;"><a href="{html.escape(d['url'])}" style="font:500 13px {FONT};color:{INK};">查看这个优惠</a></div>
+</td></tr>"""
 
 
 def build_html(deals, date_text):
-    groups = {}
-    for d in deals:
-        groups.setdefault(d.get("category"), []).append(d)
-
-    parts = []
-    for cat in CATEGORY_LABELS:
-        if cat not in groups:
-            continue
-        parts.append(f'<h2 style="font-size:18px;margin:28px 0 8px;color:#111;">{CATEGORY_LABELS[cat]}</h2>')
-        for d in groups[cat]:
-            if d.get("category") == "hdd" and d.get("price_checked"):
-                compare = f'每 TB {money(d["price_checked"])}（标准 {money(d["threshold"])}）'
-            else:
-                compare = f'标准 {money(d["threshold"])}'
-            tags = [CONDITION_LABELS.get(d.get("condition"), "")]
-            if (d.get("quantity") or 1) > 1:
-                tags.append(f'{d["quantity"]} 件装')
-            if d.get("store"):
-                tags.append(html.escape(d["store"]))
-            if d.get("source") in SOURCE_LABELS:
-                tags.append("来自 " + SOURCE_LABELS[d["source"]])
-            parts.append(f"""
-<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e5e5;border-radius:8px;margin:0 0 10px;">
-<tr><td style="padding:12px 14px;font-family:Arial,sans-serif;">
-  <a href="{html.escape(d['url'])}" style="color:#0b57d0;font-size:15px;text-decoration:none;font-weight:bold;">{html.escape(d['title'])}</a>
-  <div style="margin-top:6px;font-size:14px;color:#333;">
-    <b style="color:#0a7a2f;font-size:16px;">{money(d['price'])}</b>
-    &nbsp;·&nbsp;{compare}
-  </div>
-  <div style="margin-top:4px;font-size:12px;color:#777;">{' · '.join(t for t in tags if t)}</div>
-</td></tr></table>""")
-
-    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f6f6f6;">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:20px 10px;">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border-radius:10px;">
-<tr><td style="padding:24px;font-family:Arial,sans-serif;">
-  <h1 style="font-size:22px;margin:0 0 4px;color:#111;">今日达标 Deal</h1>
-  <div style="font-size:13px;color:#777;">{date_text} · 共 {len(deals)} 条 · 价格随时可能变化，以商家页面为准</div>
-  {''.join(parts)}
-</td></tr></table>
+    order = list(CATEGORY_LABELS)
+    deals = sorted(deals, key=lambda d: (order.index(d["category"]) if d.get("category") in order else 99))
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:{PAPER};">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:{PAPER};"><tr><td align="center" style="padding:28px 12px;">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+  <tr><td style="padding:0 4px 28px;">
+    <table cellpadding="0" cellspacing="0"><tr>
+      <td style="background:{SEAL};color:#ffffff;font:900 12px/1.05 'Songti SC','Noto Serif SC',serif;padding:5px 6px;border-radius:4px;text-align:center;">精<br>选</td>
+      <td style="padding-left:10px;font:700 17px {FONT};color:{INK};">Sam's Deals</td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding:0 4px 8px;">
+    <div style="font:700 24px/1.4 {FONT};color:{INK};">今天有 {len(deals)} 条优惠低于价格线</div>
+    <div style="font:14px/1.7 {FONT};color:{MUTED};margin-top:6px;">{date_text}。每条都低于我们给这个型号定的价格线。好价格通常很快就没了，下单前请在商家页面确认价格、成色和库存。</div>
+  </td></tr>
+  <tr><td style="padding:0 4px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid {LINE};">
+      {''.join(deal_block(d) for d in deals)}
+    </table>
+  </td></tr>
+  <tr><td style="padding:24px 4px 0;font:13px/1.7 {FONT};color:{FAINT};">
+    在网站上查看全部：<a href="{SITE_URL}" style="color:{MUTED};">{SITE_URL.replace("https://", "").rstrip("/")}</a>
+  </td></tr>
+</table>
 </td></tr></table>
 </body></html>"""
 
@@ -82,7 +137,7 @@ def create_draft(deals):
         "name": f"Deal 精选 {now.strftime('%Y-%m-%d %H:%M')}",
         "type": "regular",
         "emails": [{
-            "subject": f"今日达标 Deal {len(deals)} 条（{date_text}）",
+            "subject": f"今天有 {len(deals)} 条优惠低于价格线（{date_text}）",
             "from_name": os.environ.get("MAILERLITE_FROM_NAME") or "Deal Alerts",
             "from": os.environ["MAILERLITE_FROM_EMAIL"],
             "content": build_html(deals, date_text),
@@ -118,9 +173,9 @@ def main():
 def preview():
     sample = [
         {"category": "laptop", "title": "ASUS ROG Strix G16 RTX 5080 32GB 2TB", "url": "https://slickdeals.net/",
-         "price": 2499.99, "threshold": 2645, "condition": "new", "store": "Best Buy", "quantity": 1},
+         "price": 2499.99, "price_checked": 2499.99, "threshold": 2645, "condition": "new", "store": "Best Buy", "quantity": 1, "source": "slickdeals"},
         {"category": "graphics_card", "title": "ZOTAC RTX 5070 Ti SOLID 16GB", "url": "https://slickdeals.net/",
-         "price": 699.99, "threshold": 1200, "condition": "new", "store": "Newegg", "quantity": 1},
+         "price": 699.99, "price_checked": 699.99, "threshold": 1200, "condition": "new", "store": "Newegg", "quantity": 1, "source": "reddit"},
         {"category": "hdd", "title": "Seagate Exos X18 18TB Recertified (2-Pack)", "url": "https://slickdeals.net/",
          "price": 399.98, "price_checked": 11.11, "threshold": 24.9, "condition": "refurb",
          "store": "ServerPartDeals", "quantity": 2},

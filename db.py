@@ -117,7 +117,7 @@ def load_sources():
 
 
 def load_settings():
-    rows = _get("settings", {"select": "refresh_minutes,refresh_requested_at", "id": "eq.1"})
+    rows = _get("settings", {"select": "refresh_minutes,refresh_requested_at,review_discount_pct,review_unknown_store", "id": "eq.1"})
     return rows[0] if rows else {"refresh_minutes": 30, "refresh_requested_at": None}
 
 
