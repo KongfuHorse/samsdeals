@@ -11,15 +11,21 @@ concurrency:                    # 同一时间只跑一个，避免重复抓取
 
 jobs:
   run:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: self-hosted        # 在你自己的电脑上运行（用家里的网络）
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - run: pip install -r requirements.txt
-      - run: python run.py
+      # 自己电脑上用系统自带的 python3，依赖装在固定位置，下次直接复用
+      - name: 准备 Python 环境
+        run: |
+          VENV="$HOME/.samsdeals-venv"
+          [ -x "$VENV/bin/python" ] || python3 -m venv "$VENV"
+          "$VENV/bin/pip" install -q --upgrade pip
+          "$VENV/bin/pip" install -q -r requirements.txt
+      - name: 抓取
+        run: |
+          echo "运行电脑：$(hostname)  公网 IP：$(curl -s --max-time 5 https://api.ipify.org || echo 未知)"
+          "$HOME/.samsdeals-venv/bin/python" run.py
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
