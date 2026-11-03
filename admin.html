@@ -150,7 +150,7 @@
       <button class="primary" id="saveReview">保存</button>
     </div>
 
-    <div class="sub"><h3>手动添加优惠</h3><span class="muted small">添加后直接展示在网站上</span></div>
+    <div class="sub"><h3 id="mHeading">手动添加优惠</h3><span class="muted small" id="mHint">添加后直接展示在网站上</span></div>
     <div class="row" style="margin-bottom:6px">
       <label class="small" style="flex:2 1 280px">标题<br><input id="mTitle" style="width:100%" placeholder="比如 ASUS ROG Strix G16 RTX 5080 32GB 2TB"></label>
       <label class="small" style="flex:2 1 240px">链接<br><input id="mUrl" style="width:100%" placeholder="https://"></label>
@@ -161,9 +161,10 @@
       <label class="small">成色<br><select id="mCondition"></select></label>
       <label class="small">商家<br><input id="mStore" style="width:130px" placeholder="Best Buy"></label>
       <label class="small">件数<br><input id="mQty" type="number" min="1" step="1" value="1" style="width:70px"></label>
-      <label class="small" style="display:flex; align-items:center; gap:8px; padding-bottom:6px">
+      <label class="small" id="mPinWrap" style="display:flex; align-items:center; gap:8px; padding-bottom:6px">
         <span class="switch"><input type="checkbox" id="mPinned"><span></span></span>置顶</label>
       <button class="primary" id="addManual">添加</button>
+      <button id="cancelEdit" class="hidden">取消编辑</button>
     </div>
 
     <div class="sub"><h3>待审核</h3><span class="muted small" id="nReview"></span></div>
@@ -423,11 +424,12 @@ function dealItem(d) {
     : "";
   const pinBtn = manual && d.status === "passed"
     ? `<button data-pin="${d.id}" data-on="${d.pinned ? 0 : 1}">${d.pinned ? "取消置顶" : "置顶"}</button>` : "";
+  const editBtn = manual && d.status !== "removed" ? `<button data-edit="${d.id}">编辑</button>` : "";
   return `<li>
     <div class="t"><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></div>
     <div class="p">${usd(d.price, true)}${priceNote ? `<small>${priceNote}</small>` : ""}</div>
     <div class="m">${meta.map(x => `<span>${esc(x)}</span>`).join("")}${reason ? `<span class="reason">${esc(reason.replace("待审核：", "送审原因："))}</span>` : ""}</div>
-    <div class="a">${pinBtn}${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
+    <div class="a">${editBtn}${pinBtn}${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
   </li>`;
 }
 function renderDeals() {
@@ -465,6 +467,24 @@ $("tab-deals").addEventListener("click", async e => {
   try { await rpc("admin_set_pinned", { p_token: token, p_id: Number(b.dataset.pin), p_pinned: on }); toast(on ? "已置顶" : "已取消置顶"); await reload(); }
   catch (err) { b.disabled = false; toast("操作失败：" + err.message, true); }
 });
+let editingId = null;
+function setEditMode(d) {
+  editingId = d ? d.id : null;
+  $("mHeading").textContent = d ? "编辑手动优惠" : "手动添加优惠";
+  $("mHint").textContent = d ? "修改后点保存，网站上会同步更新" : "添加后直接展示在网站上";
+  $("addManual").textContent = d ? "保存修改" : "添加";
+  $("cancelEdit").classList.toggle("hidden", !d);
+  $("mPinWrap").classList.toggle("hidden", !!d);          // 置顶在列表里单独操作
+  $("mTitle").value = d ? d.title : ""; $("mUrl").value = d ? d.url : ""; $("mPrice").value = d ? d.price : "";
+  $("mStore").value = d ? (d.store || "") : ""; $("mQty").value = d ? (d.quantity || 1) : 1; $("mPinned").checked = false;
+  if (d) { $("mCategory").value = d.category; $("mCondition").value = d.condition || "new"; $("mTitle").focus(); }
+}
+$("tab-deals").addEventListener("click", e => {
+  const b = e.target.closest("button[data-edit]"); if (!b) return;
+  const d = data.deals.find(x => x.id === Number(b.dataset.edit));
+  if (d) { setEditMode(d); $("tab-deals").scrollIntoView({ behavior: "smooth" }); }
+});
+$("cancelEdit").addEventListener("click", () => setEditMode(null));
 $("addManual").addEventListener("click", async () => {
   const deal = {
     title: $("mTitle").value.trim(), url: $("mUrl").value.trim(), price: $("mPrice").value,
@@ -474,10 +494,15 @@ $("addManual").addEventListener("click", async () => {
   if (!deal.title || !deal.url || !deal.price) { toast("请填写标题、链接和价格", true); return; }
   $("addManual").disabled = true;
   try {
-    await rpc("admin_add_manual_deal", { p_token: token, p_deal: deal });
-    ["mTitle", "mUrl", "mPrice", "mStore"].forEach(id => $(id).value = ""); $("mQty").value = 1; $("mPinned").checked = false;
-    toast("已添加，网站上已经可以看到"); await reload();
-  } catch (err) { toast("添加失败：" + err.message, true); }
+    if (editingId) {
+      await rpc("admin_update_manual_deal", { p_token: token, p_id: editingId, p_deal: deal });
+      toast("已保存修改");
+    } else {
+      await rpc("admin_add_manual_deal", { p_token: token, p_deal: deal });
+      toast("已添加，网站上已经可以看到");
+    }
+    setEditMode(null); await reload();
+  } catch (err) { toast((editingId ? "保存失败：" : "添加失败：") + err.message, true); }
   $("addManual").disabled = false;
 });
 $("saveReview").addEventListener("click", async () => {

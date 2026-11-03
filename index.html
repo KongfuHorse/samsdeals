@@ -100,7 +100,7 @@
     <div class="ratio" id="ratio" aria-hidden="true"><span class="kept" id="kept">–</span><span class="bar"></span><span class="seen" id="seen">–</span></div>
     <div>
       <h1 id="heroTitle">大多数优惠，其实不够便宜。</h1>
-      <p id="heroText">我们给每类电脑硬件定了一条价格线。只有低于这条线的优惠，才会出现在这里。</p>
+      <p id="heroText">我们给每类电脑硬件都定了标准。只有真正便宜的优惠，才会出现在这里。</p>
     </div>
   </section>
 
@@ -147,10 +147,11 @@ function ago(t) {
 // 标题清理：去掉开头的 [GPU] 这类标签、结尾的价格和商家，信息已经单独显示
 function cleanTitle(t) {
   return String(t || "")
-    .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")
-    .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")
-    .replace(/\s+[-–]?\s*\$[\d,]+(\.\d+)?\s*(\+.*|after.*|w\/.*|@.*|\(.*\))?$/i, "")
-    .replace(/\s+@\s+[\w .'&-]+$/, "")
+    .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")                      // 开头的 [GPU] 这类标签
+    .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")                     // 开头的 "$1149.99* |"
+    .replace(/\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$/i, "")  // 结尾的价格及后面的商家、运费等
+    .replace(/\s+@\s+[\w .'&-]+$/, "")                           // 结尾的 "@ 商家"
+    .replace(/\s*[-–:|,]\s*$/, "")                                // 收尾多余的符号
     .trim();
 }
 
@@ -185,8 +186,8 @@ function renderHero(evaluated) {
   $("ratio").setAttribute("aria-hidden", "false");
   $("ratio").setAttribute("aria-label", `${evaluated} 条里留下 ${kept} 条`);
   $("heroText").textContent = evaluated
-    ? `近 ${DAYS} 天，我们评估了 ${evaluated} 条电脑硬件优惠，只有 ${kept} 条低于价格线。剩下的，都不够便宜。`
-    : `我们给每类电脑硬件定了一条价格线。只有低于这条线的优惠，才会出现在这里。`;
+    ? `近 ${DAYS} 天，我们评估了 ${evaluated} 条电脑硬件优惠，只留下 ${kept} 条。剩下的，都不够便宜。`
+    : `我们给每类电脑硬件都定了标准。只有真正便宜的优惠，才会出现在这里。`;
 }
 
 $("filters").addEventListener("click", e => {

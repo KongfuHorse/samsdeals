@@ -27,7 +27,7 @@ SOURCE_LABELS = {"slickdeals": "Slickdeals", "reddit": "Reddit", "tomshardware":
 
 
 SITE_URL = "https://kongfuhorse.github.io/samsdeals/"
-INK, MUTED, FAINT, LINE, TRACK, SEAL, PAPER = "#17202A", "#5D6772", "#8B949E", "#D3D9DE", "#DDE2E6", "#BE3A2E", "#ECEFF1"
+INK, MUTED, FAINT, LINE, SEAL, PAPER = "#17202A", "#5D6772", "#8B949E", "#D3D9DE", "#BE3A2E", "#ECEFF1"
 FONT = "-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',Helvetica,Arial,sans-serif"
 
 
@@ -37,47 +37,16 @@ def money(x, cents=False):
 
 
 def clean_title(t):
-    """和网站一样：去掉开头的 [GPU] 标签和结尾的价格、商家"""
+    """和网站一样：去掉开头的 [GPU] 标签，以及结尾的价格、商家、运费等"""
     t = re.sub(r"^\s*\[[^\]]{1,20}\]\s*", "", t or "")
     t = re.sub(r"^\s*\$[\d,.]+\*?\s*\|\s*", "", t)
-    t = re.sub(r"\s+[-–]?\s*\$[\d,]+(\.\d+)?\s*(\+.*|after.*|w/.*|@.*|\(.*\))?$", "", t, flags=re.I)
+    t = re.sub(r"\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$", "", t, flags=re.I)
     t = re.sub(r"\s+@\s+[\w .'&-]+$", "", t)
+    t = re.sub(r"\s*[-–:|,]\s*$", "", t)
     return t.strip()
 
 
-def price_line(d):
-    """价格线：用两格表格画进度条，邮件里也能正常显示"""
-    std, p = float(d["threshold"]), float(d["price_checked"])
-    lo, hi = min(std * 0.7, p * 0.9), std * 1.05
-    pos = lambda v: max(1, min(99, round((v - lo) / (hi - lo) * 100)))
-    a, b = pos(p), pos(std)
-    unit = "/TB" if d.get("category") == "hdd" else ""
-    cents = d.get("category") == "hdd"
-    return f"""
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;border-collapse:collapse;">
-  <tr>
-    <td width="{a}%" style="height:6px;background:{INK};font-size:0;line-height:0;">&nbsp;</td>
-    <td width="{b - a}%" style="height:6px;background:{TRACK};font-size:0;line-height:0;">&nbsp;</td>
-    <td width="2" style="height:6px;background:{SEAL};font-size:0;line-height:0;">&nbsp;</td>
-    <td style="height:6px;background:{TRACK};font-size:0;line-height:0;">&nbsp;</td>
-  </tr>
-</table>
-<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">
-  <tr>
-    <td style="font:12px {FONT};color:{FAINT};">这个价 {money(p, cents)}{unit}</td>
-    <td align="right" style="font:12px {FONT};color:{SEAL};">价格线 {money(std, cents)}{unit}</td>
-  </tr>
-</table>"""
-
-
 def deal_block(d):
-    has_std = d.get("threshold") is not None and d.get("price_checked") is not None   # 手动添加的优惠没有参考价
-    save = ""
-    if has_std:
-        std, p = float(d["threshold"]), float(d["price_checked"])
-        pct = round((1 - p / std) * 100)
-        hdd = d.get("category") == "hdd"
-        save = (f"每 TB 低 {money(std - p, True)}" if hdd else f"比价格线低 {money(round(std - p))}") + f"，{pct}%"
     facts = [CATEGORY_LABELS.get(d.get("category"), ""), CONDITION_LABELS.get(d.get("condition"), "")]
     if (d.get("quantity") or 1) > 1:
         facts.append(f'{d["quantity"]} 件装')
@@ -95,10 +64,8 @@ def deal_block(d):
     </td>
     <td valign="top" align="right" style="white-space:nowrap;">
       <div style="font:800 26px/1 {FONT};color:{INK};letter-spacing:-0.3px;">{money(d['price'])}</div>
-      <div style="font:13px {FONT};color:{MUTED};margin-top:6px;">{save}</div>
     </td>
   </tr></table>
-  {price_line(d) if has_std else ""}
   <div style="margin-top:12px;"><a href="{html.escape(d['url'])}" style="font:500 13px {FONT};color:{INK};">查看这个优惠</a></div>
 </td></tr>"""
 
