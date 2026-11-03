@@ -122,5 +122,5 @@ def load_settings():
 
 
 def last_run():
-    rows = _get("runs", {"select": "started_at,finished_at", "order": "finished_at.desc", "limit": "1"})
+    rows = _get("runs", {"select": "started_at,finished_at", "scope": "eq.all", "order": "finished_at.desc", "limit": "1"})
     return rows[0] if rows else None

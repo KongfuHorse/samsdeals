@@ -14,7 +14,7 @@
 - 刷新设置：自动刷新间隔、立即刷新、最近运行记录、修改后台密码
 - "立即刷新"想马上生效，需要在后台填一个 GitHub 令牌（页面上有步骤）；不填也能用，最多等 10 分钟
 
-数据库设置：依次运行 schema.sql、schema_admin.sql（运行前把文件最后的 CHANGE_ME_PASSWORD 换成后台密码）、schema_cron.sql、schema_review.sql。
+数据库设置：依次运行 schema.sql、schema_admin.sql（运行前把文件最后的 CHANGE_ME_PASSWORD 换成后台密码）、schema_cron.sql、schema_review.sql、schema_woot.sql。
 
 定时：GitHub 自己的定时很不准（常常几小时才跑一次），所以由 Supabase 每 10 分钟检查一次，到了后台设的间隔就通知 GitHub 运行。抓取在你自己的电脑（自托管运行器）上执行，用家里的网络。
 
@@ -28,6 +28,7 @@
 | schema_admin.sql | 后台用的表和函数 | 只运行一次 |
 | schema_cron.sql | Supabase 定时任务 | 只运行一次 |
 | schema_review.sql | 待审核、隐藏、删除优惠 | 只运行一次 |
+| schema_woot.sql | Woot 每天零点专抓 | 只运行一次 |
 | run.py | 主程序：抓取 → AI 解析 → 筛选 → 存库 | 不用改 |
 | sources.py | 抓取各类来源（来源列表在数据库 sources 表里） | 不用改 |
 | parser.py | AI 读标题 | 不用改 |

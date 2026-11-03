@@ -233,6 +233,9 @@
           <select id="refreshMinutes"></select>
           <button class="primary" id="saveInterval">保存</button>
         </div>
+        <label class="small" style="display:flex; align-items:center; gap:8px; margin-top:16px">
+          <span class="switch"><input type="checkbox" id="wootMidnight"><span></span></span>
+          Woot 零点专抓：每天中部时间零点上新后，过 2 分钟和 15 分钟各抓一次 Woot</label>
       </div>
     </div>
 
@@ -241,7 +244,7 @@
       <div id="dealStats" style="margin:6px 0 12px"></div>
       <div class="table-wrap">
         <table style="min-width:520px">
-          <thead><tr><th>完成时间</th><th>用时</th><th>检查</th><th>新增</th><th>达标</th></tr></thead>
+          <thead><tr><th>完成时间</th><th>类型</th><th>用时</th><th>检查</th><th>新增</th><th>达标</th></tr></thead>
           <tbody id="runsBody"></tbody>
         </table>
       </div>
@@ -589,6 +592,7 @@ function renderRefresh() {
   const st = data.settings;
   $("refreshMinutes").innerHTML = INTERVALS.map(m => `<option value="${m}" ${m === st.refresh_minutes ? "selected" : ""}>每 ${intervalText(m)}</option>`).join("");
   $("tokenBadge").textContent = st.has_github_token ? "已设置" : "未设置";
+  $("wootMidnight").checked = !!st.woot_midnight;
   $("refreshHint").textContent = st.has_github_token
     ? "点击后马上通知 GitHub 运行，大约 1 到 2 分钟后出结果。"
     : "还没设置 GitHub 令牌：点击后会在下一次定时检查时运行（最多约 10 分钟）。设置令牌后可以马上运行。";
@@ -597,9 +601,14 @@ function renderRefresh() {
     .map(([k, v]) => `<span class="stat"><b>${v || 0}</b><span class="muted small">${k}</span></span>`).join("");
   $("runsBody").innerHTML = data.runs.length ? data.runs.map(r => {
     const secs = r.started_at ? Math.round((new Date(r.finished_at) - new Date(r.started_at)) / 1000) : null;
-    return `<tr><td>${fmtTime(r.finished_at)} <span class="muted small">${ago(r.finished_at)}</span></td><td>${secs != null ? secs + " 秒" : "—"}</td><td>${r.checked}</td><td>${r.new_deals}</td><td>${r.passed}</td></tr>`;
-  }).join("") : `<tr><td colspan="5" class="muted">还没有运行记录</td></tr>`;
+    return `<tr><td>${fmtTime(r.finished_at)} <span class="muted small">${ago(r.finished_at)}</span></td><td>${r.scope === "woot" ? "Woot 零点" : "常规"}</td><td>${secs != null ? secs + " 秒" : "—"}</td><td>${r.checked}</td><td>${r.new_deals}</td><td>${r.passed}</td></tr>`;
+  }).join("") : `<tr><td colspan="6" class="muted">还没有运行记录</td></tr>`;
 }
+$("wootMidnight").addEventListener("change", async e => {
+  const on = e.target.checked;
+  try { await rpc("admin_set_woot_midnight", { p_token: token, p_on: on }); toast(on ? "已开启 Woot 零点专抓" : "已关闭 Woot 零点专抓"); }
+  catch (err) { e.target.checked = !on; toast("保存失败：" + err.message, true); }
+});
 $("saveInterval").addEventListener("click", async () => {
   try {
     await rpc("admin_save_settings", { p_token: token, p_refresh_minutes: Number($("refreshMinutes").value), p_github_token: null });

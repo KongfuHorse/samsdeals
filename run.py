@@ -160,13 +160,19 @@ def main():
     settings = db.load_settings()
     REVIEW["discount_pct"] = settings.get("review_discount_pct") or 50
     REVIEW["unknown_store"] = settings.get("review_unknown_store", True)
-    ok, reason = should_run(settings, db.last_run())
-    print(reason)
-    if not ok:
-        return
+    only = (os.environ.get("ONLY") or "").strip()   # "woot" = 只抓 Woot（每天中部时间零点的专抓）
+    if only:
+        print(f"专抓：只运行 {only}")
+    else:
+        ok, reason = should_run(settings, db.last_run())
+        print(reason)
+        if not ok:
+            return
 
     started = datetime.now(timezone.utc).isoformat()
     sources = db.load_sources()
+    if only:
+        sources = [s for s in sources if s["kind"] == only or s["key"].startswith(only)]
     print("启用的来源：", ", ".join(s["name"] for s in sources if s["enabled"]))
     rules, adjustments = db.load_rules()
     options = db.load_options()
@@ -217,6 +223,7 @@ def main():
         "checked": len(posts) + len(articles),     # 本次检查的帖子/商品数 + 文章数
         "new_deals": len(all_rows),
         "passed": len(passed),
+        "scope": only or "all",                    # all = 常规抓取；woot = 零点专抓
     })
 
 

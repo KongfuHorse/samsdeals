@@ -4,9 +4,14 @@ on:
   schedule:
     - cron: "*/10 * * * *"     # 每 10 分钟唤醒一次；真正多久抓一次，在后台"刷新设置"里改
   workflow_dispatch:            # 也可以在 Actions 页面手动点 Run workflow
+    inputs:
+      only:
+        description: "只抓某个来源（woot = 只抓 Woot），留空 = 全部"
+        required: false
+        default: ""
 
 concurrency:                    # 同一时间只跑一个，避免重复抓取
-  group: fetch
+  group: fetch-${{ inputs.only || 'all' }}
   cancel-in-progress: false
 
 jobs:
@@ -31,3 +36,4 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           WOOT_API_KEY: ${{ secrets.WOOT_API_KEY }}
+          ONLY: ${{ inputs.only }}
