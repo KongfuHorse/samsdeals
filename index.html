@@ -65,16 +65,7 @@
   .price-col { grid-column:2; grid-row:1 / span 2; text-align:right; }
   .price { font:800 34px/1 var(--num); font-stretch:115%; font-variant-numeric:tabular-nums; letter-spacing:-.5px; white-space:nowrap; }
   .price small { font-size:15px; font-weight:600; color:var(--muted); margin-left:2px; }
-  .below { font-size:14px; color:var(--muted); margin-top:8px; white-space:nowrap; }
-  .below b { color:var(--ink); font-family:var(--num); }
-
-  /* 价格线 */
-  .line { grid-column:1 / -1; margin-top:16px; }
-  .track { position:relative; height:6px; background:var(--track); border-radius:3px; }
-  .fill { position:absolute; left:0; top:0; bottom:0; background:var(--ink); border-radius:3px; }
-  .mark { position:absolute; top:-7px; width:2px; height:20px; background:var(--seal); }
-  .line-labels { display:flex; justify-content:space-between; gap:12px; font:500 12px/1 var(--num); color:var(--faint); margin-top:9px; }
-  .line-labels .std { color:var(--seal); }
+  .pin { color:var(--seal); font-weight:500; }
 
   .empty { padding:56px 0; color:var(--muted); }
   .empty strong { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; }
@@ -93,12 +84,8 @@
     .ratio .seen { font-size:40px; }
     .hero h1 { font-size:24px; }
     .deal { grid-template-columns:1fr; }
-    .price-col { grid-column:1; grid-row:auto; text-align:left; margin-top:10px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
-    .below { margin-top:0; }
+    .price-col { grid-column:1; grid-row:auto; text-align:left; margin-top:10px; }
     .about { grid-template-columns:1fr; gap:20px; }
-  }
-  @media (prefers-reduced-motion:no-preference) {
-    .fill { transition:width .7s cubic-bezier(.2,.7,.2,1); }
   }
 </style>
 </head>
@@ -121,7 +108,7 @@
   <main id="list" aria-live="polite"><div class="empty">正在加载…</div></main>
 
   <section class="about" aria-label="说明">
-    <div><h2>价格线</h2><p>每个型号都有一条标准价，比如 RTX 5090 游戏本是 $3,500。开箱、翻新会更严，ROG、Alienware 会适当放宽。</p></div>
+    <div><h2>价格线</h2><p>每个型号都有一条标准价。开箱、翻新会更严，ROG、Alienware 会适当放宽。</p></div>
     <div><h2>自动检查</h2><p>持续检查 Slickdeals、Reddit、Woot、Tom's Hardware 等来源，用 AI 读出型号、成色和价格，再和价格线对比。</p></div>
     <div><h2>以商家为准</h2><p>好价格通常很快就没了。下单前请在商家页面确认价格、成色和库存。</p></div>
   </section>
@@ -174,18 +161,6 @@ function renderFilters() {
     `<button type="button" data-c="${c}" aria-pressed="${c === current}">${label}<span>${n}</span></button>`).join("");
 }
 
-function priceLine(d) {
-  // 刻度：从比 deal 价再低一点，到标准价的 105%，差距大小一眼能看出来
-  const std = Number(d.threshold), p = Number(d.price_checked);
-  const lo = Math.min(std * 0.7, p * 0.9), hi = std * 1.05;
-  const pos = v => Math.min(100, Math.max(0, (v - lo) / (hi - lo) * 100));
-  const fmt = v => d.category === "hdd" ? money(v, true) + "/TB" : money(v);
-  return `<div class="line" aria-hidden="true">
-      <div class="track"><div class="fill" style="width:${pos(p)}%"></div><div class="mark" style="left:calc(${pos(std)}% - 1px)"></div></div>
-      <div class="line-labels"><span>这个价 ${fmt(p)}</span><span class="std">价格线 ${fmt(std)}</span></div>
-    </div>`;
-}
-
 function renderList() {
   const shown = current === "all" ? deals : deals.filter(d => d.category === current);
   if (!shown.length) {
@@ -193,19 +168,12 @@ function renderList() {
     return;
   }
   $("list").innerHTML = shown.map(d => {
-    const std = Number(d.threshold), p = Number(d.price_checked);
-    const pct = Math.round((1 - p / std) * 100);
-    const saveText = d.category === "hdd" ? `每 TB 低 <b>${money(std - p, true)}</b>` : `比价格线低 <b>${money(Math.round(std - p))}</b>`;
     const facts = [LABELS[d.category], COND[d.condition], d.quantity > 1 ? `${d.quantity} 件装` : "", d.store,
                    SRC[d.source] ? `来自 ${SRC[d.source]}` : "", ago(d.created_at)].filter(Boolean);
     return `<article class="deal">
       <h2 class="deal-title"><a href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">${esc(cleanTitle(d.title))}</a></h2>
-      <div class="price-col">
-        <div class="price">${money(d.price)}</div>
-        <div class="below">${saveText}，${pct}%</div>
-      </div>
-      <div class="facts">${facts.map(f => `<span>${esc(f)}</span>`).join("")}</div>
-      ${priceLine(d)}
+      <div class="price-col"><div class="price">${money(d.price)}</div></div>
+      <div class="facts">${d.pinned ? `<span class="pin">置顶</span>` : ""}${facts.map(f => `<span>${esc(f)}</span>`).join("")}</div>
     </article>`;
   }).join("");
 }
@@ -236,7 +204,7 @@ async function get(path) {
   const since = new Date(Date.now() - DAYS * 86400000).toISOString();
   try {
     const [rows, runs] = await Promise.all([
-      get(`deals?select=title,url,source,price,price_checked,threshold,category,condition,quantity,store,created_at&status=eq.passed&created_at=gte.${since}&order=created_at.desc&limit=300`),
+      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=300`),
       get(`runs?select=finished_at,new_deals&finished_at=gte.${since}&order=finished_at.desc&limit=5000`).catch(() => []),
     ]);
     deals = rows;

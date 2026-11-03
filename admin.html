@@ -150,6 +150,22 @@
       <button class="primary" id="saveReview">保存</button>
     </div>
 
+    <div class="sub"><h3>手动添加优惠</h3><span class="muted small">添加后直接展示在网站上</span></div>
+    <div class="row" style="margin-bottom:6px">
+      <label class="small" style="flex:2 1 280px">标题<br><input id="mTitle" style="width:100%" placeholder="比如 ASUS ROG Strix G16 RTX 5080 32GB 2TB"></label>
+      <label class="small" style="flex:2 1 240px">链接<br><input id="mUrl" style="width:100%" placeholder="https://"></label>
+    </div>
+    <div class="row" style="margin-bottom:6px">
+      <label class="small">价格 $<br><input id="mPrice" type="number" min="0" step="0.01" style="width:110px"></label>
+      <label class="small">品类<br><select id="mCategory"></select></label>
+      <label class="small">成色<br><select id="mCondition"></select></label>
+      <label class="small">商家<br><input id="mStore" style="width:130px" placeholder="Best Buy"></label>
+      <label class="small">件数<br><input id="mQty" type="number" min="1" step="1" value="1" style="width:70px"></label>
+      <label class="small" style="display:flex; align-items:center; gap:8px; padding-bottom:6px">
+        <span class="switch"><input type="checkbox" id="mPinned"><span></span></span>置顶</label>
+      <button class="primary" id="addManual">添加</button>
+    </div>
+
     <div class="sub"><h3>待审核</h3><span class="muted small" id="nReview"></span></div>
     <ul class="dl" id="listReview"></ul>
     <div class="sub"><h3>正在展示</h3><span class="muted small" id="nPassed"></span></div>
@@ -396,18 +412,31 @@ const DONE_TEXT = { passed: "已展示", hidden: "已隐藏", removed: "已删�
 function usd(x, cents) { return "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 }); }
 function dealItem(d) {
   const hdd = d.category === "hdd";
-  const pct = d.threshold ? Math.round((1 - d.price_checked / d.threshold) * 100) : null;
+  const manual = d.source === "manual";
+  const hasStd = d.threshold != null && d.price_checked != null;
+  const pct = hasStd ? Math.round((1 - d.price_checked / d.threshold) * 100) : null;
   const reason = (d.adjustments_applied || "").split("; ").find(x => x.startsWith("待审核")) || "";
-  const meta = [CAT_NAMES[d.category], COND_NAMES[d.condition], d.store || "商家不明", d.source, ago(d.created_at)].filter(Boolean);
+  const meta = [manual ? "手动添加" : "", d.pinned ? "置顶中" : "", CAT_NAMES[d.category], COND_NAMES[d.condition],
+                d.store || "商家不明", manual ? "" : d.source, ago(d.created_at)].filter(Boolean);
+  const priceNote = hasStd
+    ? `${hdd ? "每 TB " + usd(d.price_checked, true) + "，" : ""}价格线 ${hdd ? usd(d.threshold, true) : usd(d.threshold)}，低 ${pct}%`
+    : "";
+  const pinBtn = manual && d.status === "passed"
+    ? `<button data-pin="${d.id}" data-on="${d.pinned ? 0 : 1}">${d.pinned ? "取消置顶" : "置顶"}</button>` : "";
   return `<li>
     <div class="t"><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></div>
-    <div class="p">${usd(d.price, true)}<small>${hdd ? "每 TB " + usd(d.price_checked, true) + "，" : ""}价格线 ${hdd ? usd(d.threshold, true) : usd(d.threshold)}${pct != null ? "，低 " + pct + "%" : ""}</small></div>
+    <div class="p">${usd(d.price, true)}${priceNote ? `<small>${priceNote}</small>` : ""}</div>
     <div class="m">${meta.map(x => `<span>${esc(x)}</span>`).join("")}${reason ? `<span class="reason">${esc(reason.replace("待审核：", "送审原因："))}</span>` : ""}</div>
-    <div class="a">${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
+    <div class="a">${pinBtn}${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
   </li>`;
 }
 function renderDeals() {
   const st = data.settings;
+  const keepCat = $("mCategory").value, keepCond = $("mCondition").value;
+  $("mCategory").innerHTML = optionsOf("category").map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
+  $("mCondition").innerHTML = optionsOf("condition").map(o => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
+  if (keepCat) $("mCategory").value = keepCat;
+  if (keepCond) $("mCondition").value = keepCond;
   $("reviewPct").innerHTML = [20, 30, 40, 50, 60, 70, 80].map(v => `<option value="${v}" ${v === st.review_discount_pct ? "selected" : ""}>${v}%</option>`).join("");
   $("reviewStore").checked = !!st.review_unknown_store;
   const by = s => data.deals.filter(d => d.status === s);
@@ -429,6 +458,27 @@ $("tab-deals").addEventListener("click", async e => {
   b.disabled = true;
   try { await rpc("admin_set_deal_status", { p_token: token, p_id: Number(b.dataset.deal), p_status: st }); toast(DONE_TEXT[st]); await reload(); }
   catch (err) { b.disabled = false; toast("操作失败：" + err.message, true); }
+});
+$("tab-deals").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-pin]"); if (!b) return;
+  const on = b.dataset.on === "1"; b.disabled = true;
+  try { await rpc("admin_set_pinned", { p_token: token, p_id: Number(b.dataset.pin), p_pinned: on }); toast(on ? "已置顶" : "已取消置顶"); await reload(); }
+  catch (err) { b.disabled = false; toast("操作失败：" + err.message, true); }
+});
+$("addManual").addEventListener("click", async () => {
+  const deal = {
+    title: $("mTitle").value.trim(), url: $("mUrl").value.trim(), price: $("mPrice").value,
+    category: $("mCategory").value, condition: $("mCondition").value, store: $("mStore").value.trim(),
+    quantity: $("mQty").value, pinned: $("mPinned").checked,
+  };
+  if (!deal.title || !deal.url || !deal.price) { toast("请填写标题、链接和价格", true); return; }
+  $("addManual").disabled = true;
+  try {
+    await rpc("admin_add_manual_deal", { p_token: token, p_deal: deal });
+    ["mTitle", "mUrl", "mPrice", "mStore"].forEach(id => $(id).value = ""); $("mQty").value = 1; $("mPinned").checked = false;
+    toast("已添加，网站上已经可以看到"); await reload();
+  } catch (err) { toast("添加失败：" + err.message, true); }
+  $("addManual").disabled = false;
 });
 $("saveReview").addEventListener("click", async () => {
   try {

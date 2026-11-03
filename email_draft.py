@@ -71,10 +71,13 @@ def price_line(d):
 
 
 def deal_block(d):
-    std, p = float(d["threshold"]), float(d["price_checked"])
-    pct = round((1 - p / std) * 100)
-    hdd = d.get("category") == "hdd"
-    save = f"每 TB 低 {money(std - p, True)}" if hdd else f"比价格线低 {money(round(std - p))}"
+    has_std = d.get("threshold") is not None and d.get("price_checked") is not None   # 手动添加的优惠没有参考价
+    save = ""
+    if has_std:
+        std, p = float(d["threshold"]), float(d["price_checked"])
+        pct = round((1 - p / std) * 100)
+        hdd = d.get("category") == "hdd"
+        save = (f"每 TB 低 {money(std - p, True)}" if hdd else f"比价格线低 {money(round(std - p))}") + f"，{pct}%"
     facts = [CATEGORY_LABELS.get(d.get("category"), ""), CONDITION_LABELS.get(d.get("condition"), "")]
     if (d.get("quantity") or 1) > 1:
         facts.append(f'{d["quantity"]} 件装')
@@ -92,10 +95,10 @@ def deal_block(d):
     </td>
     <td valign="top" align="right" style="white-space:nowrap;">
       <div style="font:800 26px/1 {FONT};color:{INK};letter-spacing:-0.3px;">{money(d['price'])}</div>
-      <div style="font:13px {FONT};color:{MUTED};margin-top:6px;">{save}，{pct}%</div>
+      <div style="font:13px {FONT};color:{MUTED};margin-top:6px;">{save}</div>
     </td>
   </tr></table>
-  {price_line(d)}
+  {price_line(d) if has_std else ""}
   <div style="margin-top:12px;"><a href="{html.escape(d['url'])}" style="font:500 13px {FONT};color:{INK};">查看这个优惠</a></div>
 </td></tr>"""
 
