@@ -113,7 +113,31 @@ def save_run(row):
 
 
 def load_sources():
-    return _get("sources", {"select": "*", "order": "sort_order"})
+    sources = _get("sources", {"select": "*", "order": "sort_order"})
+    # 自动来源带上它对应标签的关键词
+    tag_ids = [str(s["tag_id"]) for s in sources if s.get("auto") and s.get("tag_id")]
+    if tag_ids:
+        tags = {t["id"]: t for t in _get("tags", {"select": "id,conditions", "id": f"in.({','.join(tag_ids)})"})}
+        for s in sources:
+            t = tags.get(s.get("tag_id"))
+            s["tag_keywords"] = (t or {}).get("conditions", {}).get("keywords") or []
+    return sources
+
+
+def mark_source_hits(keys):
+    """这些自动来源这次有相关结果，记下时间"""
+    if not keys:
+        return
+    from datetime import datetime, timezone
+    quoted = ",".join('"' + k.replace('"', '') + '"' for k in keys)
+    r = requests.patch(f"{_base()}/sources", headers=_headers({"Prefer": "return=minimal"}),
+                       params={"key": f"in.({quoted})"}, json={"last_hit_at": datetime.now(timezone.utc).isoformat()}, timeout=30)
+    r.raise_for_status()
+
+
+def auto_sources_maintain():
+    r = requests.post(f"{_base()}/rpc/auto_sources_maintain", headers=_headers(), json={}, timeout=30)
+    r.raise_for_status()
 
 
 def load_settings():

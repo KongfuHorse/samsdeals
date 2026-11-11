@@ -179,7 +179,14 @@ def main():
     all_rows = []
 
     # 1. 帖子型（Slickdeals、Reddit、Woot）
-    posts = fetch_posts(sources) + fetch_woot(sources)
+    rss_posts, auto_hits = fetch_posts(sources)
+    posts = rss_posts + fetch_woot(sources)
+    if not only:                                   # 自动来源：记下哪些有结果，停用太久没结果的
+        try:
+            db.mark_source_hits(auto_hits)
+            db.auto_sources_maintain()
+        except Exception as e:
+            print(f"[warn] 自动来源维护失败: {e}")
     if posts:
         known = db.existing_urls([it["url"] for it in posts])
         new_posts = [it for it in posts if it["url"] not in known]

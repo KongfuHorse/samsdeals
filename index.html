@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sam's Deals · 精选电脑硬件优惠</title>
-<meta name="description" content="只收录低于价格线的电脑硬件优惠：游戏本、显卡、台式机、固态和机械硬盘。">
+<meta name="description" content="搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -12,106 +12,149 @@
 <style>
   :root {
     --paper:#ECEFF1; --surface:#F8F9FA; --ink:#17202A; --muted:#5D6772; --faint:#8B949E;
-    --line:#D3D9DE; --seal:#BE3A2E; --track:#DDE2E6;
+    --line:#D3D9DE; --seal:#BE3A2E; --hover:#E1E6EA;
     --num:"Archivo", "Noto Sans SC", system-ui, sans-serif;
     --text:"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --paper:#111519; --surface:#181D22; --ink:#E6EAEE; --muted:#9AA3AD; --faint:#6C7580;
-      --line:#2A3138; --seal:#DE5A4C; --track:#262D34;
+      --line:#2A3138; --seal:#DE5A4C; --hover:#222930;
     }
   }
   * { box-sizing:border-box; }
   html { -webkit-text-size-adjust:100%; }
   body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.7 var(--text); }
   a { color:inherit; }
+  button, input { font:inherit; color:inherit; }
   :focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:2px; }
+  [hidden] { display:none !important; }
   .wrap { max-width:760px; margin:0 auto; padding:0 20px; }
 
-  /* 顶栏 */
-  .top { display:flex; align-items:center; justify-content:space-between; padding:28px 0 0; }
-  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; }
-  .seal { width:34px; height:34px; display:grid; place-items:center; background:var(--seal); color:#fff;
+  /* 品牌 */
+  .brand { display:inline-flex; align-items:center; gap:12px; text-decoration:none; }
+  .seal { width:34px; height:34px; display:grid; place-items:center; background:var(--seal); color:#fff; flex:none;
           border-radius:5px; font:900 13px/1 "Noto Serif SC", serif; letter-spacing:.5px; writing-mode:vertical-rl;
           transform:rotate(-4deg); }
-  .brand-name { font:700 19px/1 var(--num); font-stretch:112%; letter-spacing:-.2px; }
-  .subscribe { font-size:14px; font-weight:500; text-decoration:none; padding:7px 14px; border:1.5px solid var(--ink); border-radius:999px; }
-  .subscribe:hover { background:var(--ink); color:var(--paper); }
+  .brand-name { font:700 19px/1 var(--num); font-stretch:112%; letter-spacing:-.2px; white-space:nowrap; }
 
-  /* 首屏：分数 */
-  .hero { display:grid; grid-template-columns:auto 1fr; gap:36px; align-items:center; padding:72px 0 56px; }
-  .ratio { font-family:var(--num); font-stretch:125%; font-weight:800; line-height:.9; text-align:center;
-           font-variant-numeric:tabular-nums; min-width:150px; }
-  .ratio .kept { font-size:96px; display:block; }
-  .ratio .bar { display:block; height:5px; background:var(--ink); margin:12px 0 14px; border-radius:3px; }
-  .ratio .seen { font-size:44px; display:block; color:var(--faint); font-weight:600; }
-  .hero h1 { font-size:30px; line-height:1.35; margin:0 0 12px; font-weight:700; letter-spacing:-.3px; }
-  .hero p { margin:0; color:var(--muted); max-width:30em; }
+  /* 首页：居中的品牌和搜索框 */
+  .home-hero { padding:15vh 0 40px; text-align:center; }
+  .home-hero .brand { gap:18px; margin-bottom:34px; }
+  .home-hero .seal { width:58px; height:58px; font-size:22px; border-radius:8px; }
+  .home-hero .brand-name { font-size:44px; letter-spacing:-1px; }
 
-  /* 分类 */
-  .filters { display:flex; gap:22px; flex-wrap:wrap; border-bottom:1px solid var(--line); margin-bottom:8px; }
-  .filters button { appearance:none; background:none; border:0; padding:10px 0; margin-bottom:-1px; font:500 15px var(--text);
-                    color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; }
-  .filters button[aria-pressed="true"] { color:var(--ink); border-bottom-color:var(--ink); }
-  .filters button span { font-family:var(--num); color:var(--faint); margin-left:4px; font-size:13px; }
+  /* 标签页：顶栏 */
+  .bar { display:flex; align-items:center; gap:20px; padding:22px 0; }
+  .bar .search { flex:1; }
 
-  /* deal 列表 */
-  .deal { display:grid; grid-template-columns:1fr auto; gap:6px 28px; padding:30px 0 32px; border-bottom:1px solid var(--line); }
-  .deal-title { font-size:18px; font-weight:500; line-height:1.5; margin:0; }
+  /* 搜索框 */
+  .search { position:relative; max-width:600px; margin:0 auto; text-align:left; }
+  .search form { display:flex; align-items:center; background:var(--surface); border:1.5px solid var(--line); border-radius:28px;
+                 padding:0 6px 0 20px; height:54px; }
+  .bar .search form { height:46px; }
+  .search form:focus-within { border-color:var(--ink); }
+  .search.open form { border-radius:24px 24px 0 0; border-bottom-color:var(--line); }
+  .search input { flex:1; min-width:0; border:0; background:none; outline:none; font-size:17px; height:100%; }
+  .search input::placeholder { color:var(--faint); }
+  .search .go { border:0; background:none; cursor:pointer; width:42px; height:42px; border-radius:50%; display:grid; place-items:center; color:var(--muted); flex:none; }
+  .search .go:hover { background:var(--hover); color:var(--ink); }
+  .suggest { position:absolute; left:0; right:0; top:100%; z-index:5; margin:0; padding:6px 0 10px; list-style:none; background:var(--surface);
+             border:1.5px solid var(--ink); border-top:0; border-radius:0 0 24px 24px; }
+  .suggest li { padding:9px 20px; cursor:pointer; display:flex; justify-content:space-between; gap:12px; }
+  .suggest li[aria-selected="true"], .suggest li:hover { background:var(--hover); }
+  .suggest small { color:var(--faint); font-size:13px; white-space:nowrap; }
+
+  /* 标签按钮 */
+  .chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:22px auto 0; max-width:640px; padding:0; list-style:none; }
+  .chips a, .chip-btn { display:inline-block; padding:5px 14px; border:1px solid var(--line); border-radius:999px; font-size:14px;
+                        text-decoration:none; background:none; cursor:pointer; color:var(--ink); }
+  .chips a:hover, .chip-btn:hover { background:var(--hover); border-color:var(--faint); }
+
+  /* 搜索没有结果时的提示 */
+  .miss { max-width:600px; margin:18px auto 0; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:var(--surface); text-align:left; }
+  .miss p { margin:0 0 10px; }
+  .miss .chips { justify-content:flex-start; margin:0 0 14px; }
+  .miss .hint { color:var(--muted); font-size:14px; margin:10px 0 0; }
+  .primary { background:var(--ink); color:var(--paper); border:0; border-radius:999px; padding:9px 20px; font-weight:500; cursor:pointer; }
+  .primary:disabled { opacity:.55; cursor:default; }
+
+  /* 小标题 */
+  .section-title { font-size:15px; font-weight:700; margin:40px 0 0; padding-bottom:10px; border-bottom:1px solid var(--line); }
+
+  /* 优惠列表 */
+  .deal { display:grid; grid-template-columns:1fr auto; gap:6px 28px; padding:24px 0 26px; border-bottom:1px solid var(--line); }
+  .ranked .deal { grid-template-columns:30px 1fr auto; column-gap:14px; }
+  .rank { font:600 17px/1.65 var(--num); color:var(--faint); font-variant-numeric:tabular-nums; grid-row:1 / span 2; }
+  .deal-title { font-size:17px; font-weight:500; line-height:1.5; margin:0; overflow-wrap:anywhere; }
   .deal-title a { text-decoration:none; }
   .deal-title a:hover { text-decoration:underline; text-underline-offset:3px; }
-  .facts { grid-column:1; color:var(--muted); font-size:14px; display:flex; flex-wrap:wrap; gap:4px 16px; }
-  .price-col { grid-column:2; grid-row:1 / span 2; text-align:right; }
-  .price { font:800 34px/1 var(--num); font-stretch:115%; font-variant-numeric:tabular-nums; letter-spacing:-.5px; white-space:nowrap; }
-  .price small { font-size:15px; font-weight:600; color:var(--muted); margin-left:2px; }
+  .facts { color:var(--muted); font-size:14px; display:flex; flex-wrap:wrap; gap:4px 16px; }
+  .ranked .facts { grid-column:2; }
+  .price-col { grid-row:1 / span 2; text-align:right; }
+  .deal:not(.r) .price-col { grid-column:2; }
+  .ranked .price-col { grid-column:3; }
+  .price { font:800 30px/1.1 var(--num); font-stretch:115%; font-variant-numeric:tabular-nums; letter-spacing:-.5px; white-space:nowrap; }
+  .per { font:500 14px/1 var(--num); color:var(--muted); margin-top:6px; white-space:nowrap; }
   .pin { color:var(--seal); font-weight:500; }
 
-  .empty { padding:56px 0; color:var(--muted); }
-  .empty strong { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; }
+  /* 标签页标题和订阅 */
+  .tag-head { padding:26px 0 0; }
+  .tag-head h1 { font-size:30px; line-height:1.3; margin:0 0 6px; letter-spacing:-.3px; }
+  .tag-head p { margin:0; color:var(--muted); font-size:15px; }
+  .sub { margin:24px 0 0; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
+  .sub h2 { font-size:15px; margin:0 0 10px; }
+  .sub .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .sub input[type=email] { flex:1 1 220px; min-width:0; height:42px; padding:0 14px; border:1.5px solid var(--line); border-radius:999px; background:var(--paper); outline:none; }
+  .sub input[type=email]:focus { border-color:var(--ink); }
+  .sub .freq { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; font-size:14px; color:var(--muted); }
+  .sub .freq label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
+  .sub .freq input { accent-color:var(--ink); margin:0; }
+  .sub .msg { margin:12px 0 0; font-size:14px; }
 
-  /* 说明 */
-  .about { margin:64px 0 0; padding:32px 0 0; border-top:1px solid var(--line); display:grid; grid-template-columns:repeat(3, 1fr); gap:28px; }
-  .about h2 { font-size:15px; margin:0 0 6px; }
-  .about p { margin:0; font-size:14px; color:var(--muted); }
+  .empty { padding:48px 0; color:var(--muted); }
+  .empty strong { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; }
   footer { padding:40px 0 56px; color:var(--faint); font-size:13px; }
 
   @media (max-width:640px) {
-    .hero { grid-template-columns:1fr; gap:20px; padding:48px 0 40px; }
-    .ratio { text-align:left; min-width:0; display:flex; align-items:baseline; gap:12px; }
-    .ratio .kept { font-size:72px; }
-    .ratio .bar { width:5px; height:56px; margin:0; align-self:center; transform:skewX(-18deg); }
-    .ratio .seen { font-size:40px; }
-    .hero h1 { font-size:24px; }
-    .deal { grid-template-columns:1fr; }
-    .price-col { grid-column:1; grid-row:auto; text-align:left; margin-top:10px; }
-    .about { grid-template-columns:1fr; gap:20px; }
+    .home-hero { padding-top:9vh; }
+    .home-hero .seal { width:46px; height:46px; font-size:17px; }
+    .home-hero .brand-name { font-size:34px; }
+    .bar { flex-wrap:wrap; gap:14px; }
+    .bar .search { flex-basis:100%; }
+    .deal, .ranked .deal { grid-template-columns:1fr; }
+    .ranked .deal { grid-template-columns:28px 1fr; }
+    .price-col, .ranked .price-col { grid-column:auto; grid-row:auto; text-align:left; margin-top:8px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+    .ranked .price-col, .ranked .facts { grid-column:2; }
+    .per { margin-top:0; }
+    .tag-head h1 { font-size:25px; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <a class="brand" href="./" aria-label="Sam's Deals 首页"><span class="seal" aria-hidden="true">精选</span><span class="brand-name">Sam's Deals</span></a>
-    <a class="subscribe" id="subscribe" href="#" target="_blank" rel="noopener">邮件订阅</a>
-  </header>
 
-  <section class="hero" aria-labelledby="heroTitle">
-    <div class="ratio" id="ratio" aria-hidden="true"><span class="kept" id="kept">–</span><span class="bar"></span><span class="seen" id="seen">–</span></div>
-    <div>
-      <h1 id="heroTitle">大多数优惠，其实不够便宜。</h1>
-      <p id="heroText">我们给每类电脑硬件都定了标准。只有真正便宜的优惠，才会出现在这里。</p>
-    </div>
-  </section>
+  <!-- 首页 -->
+  <div id="viewHome" hidden>
+    <section class="home-hero">
+      <a class="brand" href="./" data-home><span class="seal" aria-hidden="true">精选</span><span class="brand-name">Sam's Deals</span></a>
+      <div class="search" id="searchHome"></div>
+      <ul class="chips" id="hotTags"></ul>
+      <div class="miss" id="missHome" hidden></div>
+    </section>
+    <h2 class="section-title" id="featuredTitle"></h2>
+    <main id="featured" aria-live="polite"></main>
+  </div>
 
-  <nav class="filters" id="filters" aria-label="按品类筛选"></nav>
-  <main id="list" aria-live="polite"><div class="empty">正在加载…</div></main>
-
-  <section class="about" aria-label="说明">
-    <div><h2>价格线</h2><p>每个型号都有一条标准价。开箱、翻新会更严，ROG、Alienware 会适当放宽。</p></div>
-    <div><h2>自动检查</h2><p>持续检查 Slickdeals、Reddit、Woot、Tom's Hardware 等来源，用 AI 读出型号、成色和价格，再和价格线对比。</p></div>
-    <div><h2>以商家为准</h2><p>好价格通常很快就没了。下单前请在商家页面确认价格、成色和库存。</p></div>
-  </section>
+  <!-- 标签页 -->
+  <div id="viewTag" hidden>
+    <header class="bar">
+      <a class="brand" href="./" data-home><span class="seal" aria-hidden="true">精选</span><span class="brand-name">Sam's Deals</span></a>
+      <div class="search" id="searchTag"></div>
+    </header>
+    <div class="miss" id="missTag" hidden></div>
+    <div id="tagBody" aria-live="polite"></div>
+  </div>
 
   <footer id="status">&nbsp;</footer>
 </div>
@@ -120,103 +163,393 @@
 // ===== 设置（只改这里）=====
 const SUPABASE_URL = "https://pmjmexfueofdaubcumgk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_l02lU8RFOe5RwSkO-YasHw_MBTgd-av";   // 公开 key，可以放在网页里
-const SUBSCRIBE_URL = "";                                                       // MailerLite 订阅表单链接
-const DAYS = 14;                                                                 // 显示最近几天的 deal
+const FEATURED_DAYS = 14;      // 首页精选推荐显示最近几天的
+const HOT_TAGS = 10;           // 首页显示几个热门标签
+const LANG = "zh";             // 界面语言（第三阶段加 en）
 // ==========================
 
-const LABELS = { laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" };
-const COND = { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" };
+// 所有界面文字都放在这里，以后加英文只需要加一个 en
+const I18N = { zh: {
+  placeholder: "想买什么？比如 5090 笔记本、20TB 硬盘",
+  searchBtn: "搜索",
+  featured: "精选推荐",
+  featuredEmpty: "现在没有精选推荐",
+  featuredEmptyHint: "可以在上面搜索你关心的品类，看看最近的价格。",
+  loading: "正在加载…",
+  loadError: "暂时读不到数据",
+  loadErrorHint: "请稍后刷新页面。",
+  pinned: "置顶",
+  from: s => `来自 ${s}`,
+  pack: n => `${n} 件装`,
+  perTb: p => `每 TB ${p}`,
+  justNow: "刚刚", minAgo: n => `${n} 分钟前`, hourAgo: n => `${n} 小时前`, dayAgo: n => `${n} 天前`,
+  found: s => `${s}发现`,
+  lastCheck: s => `上次检查在 ${s}。价格以商家页面为准。`,
+  priceNote: "价格以商家页面为准。",
+  dealsCount: n => `${n} 条价格`,
+  missTitle: q => `还没有「${q}」这个标签`,
+  missRelated: "你要找的是不是：",
+  createBtn: q => `新建标签「${q}」`,
+  createHint: "新建后，我们会开始收集这类商品的价格。",
+  creating: "正在新建…",
+  errLimited: "今天新建的标签太多了，请明天再试。",
+  errNotProduct: "看不出这是哪种商品。请换一个说法，比如写上品牌和型号。",
+  errServer: "新建失败了，请稍后再试。",
+  rankTotal: n => `近 30 天收集到 ${n} 条价格，从低到高排列。`,
+  rankPerTb: n => `近 30 天收集到 ${n} 条价格，按每 TB 价格从低到高排列。`,
+  rankKeyword: n => `近 30 天有 ${n} 条可能相关的价格，从低到高排列。这个品类刚开始收集，结果可能不全。`,
+  tagEmpty: "还没有收集到价格",
+  tagEmptyNew: "这个标签刚建好，我们已经开始收集。可以先订阅，有价格了再来看。",
+  tagEmptyOld: "近 30 天没有收集到这类商品的价格。可以先订阅，有新价格了再来看。",
+  tagNotFound: "找不到这个标签",
+  tagNotFoundHint: "可以回到首页重新搜索。",
+  backHome: "回到首页",
+  subTitle: name => `订阅「${name}」的新优惠`,
+  subEmail: "你的邮箱",
+  subInstant: "有新优惠马上通知",
+  subDaily: "每天汇总一封",
+  subBtn: "订阅这个标签",
+  subSoon: "订阅功能即将开放。我们现在不会保存你的邮箱，开放后请再来订阅。",
+  subBadEmail: "请填写正确的邮箱。",
+  pageTitle: name => `${name} 价格排行 · Sam's Deals`,
+  homeTitle: "Sam's Deals · 精选电脑硬件优惠",
+  categories: { laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
+  conditions: { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" },
+} };
+const T = I18N[LANG];
 const SRC = { slickdeals:"Slickdeals", reddit:"Reddit", tomshardware:"Tom's Hardware", techradar:"TechRadar", woot:"Woot" };
 const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
   ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
   : { apikey: SUPABASE_ANON_KEY };
-let deals = [], current = "all";
 
 const $ = id => document.getElementById(id);
-if (SUBSCRIBE_URL) $("subscribe").href = SUBSCRIBE_URL; else $("subscribe").hidden = true;
-
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 const money = (x, cents) => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 });
+const tagName = t => (LANG !== "zh" && t.name_en) || t.name;
 function ago(t) {
   const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000));
-  if (m < 1) return "刚刚";
-  if (m < 60) return m + " 分钟前";
-  if (m < 1440) return Math.round(m / 60) + " 小时前";
-  return Math.round(m / 1440) + " 天前";
+  if (m < 1) return T.justNow;
+  if (m < 60) return T.minAgo(m);
+  if (m < 1440) return T.hourAgo(Math.round(m / 60));
+  return T.dayAgo(Math.round(m / 1440));
 }
 // 标题清理：去掉开头的 [GPU] 这类标签、结尾的价格和商家，信息已经单独显示
 function cleanTitle(t) {
   return String(t || "")
-    .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")                      // 开头的 [GPU] 这类标签
-    .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")                     // 开头的 "$1149.99* |"
-    .replace(/\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$/i, "")  // 结尾的价格及后面的商家、运费等
-    .replace(/\s+@\s+[\w .'&-]+$/, "")                           // 结尾的 "@ 商家"
-    .replace(/\s*[-–:|,]\s*$/, "")                                // 收尾多余的符号
+    .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")
+    .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")
+    .replace(/\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$/i, "")
+    .replace(/\s+@\s+[\w .'&-]+$/, "")
+    .replace(/\s*[-–:|,]\s*$/, "")
     .trim();
 }
 
-function renderFilters() {
-  const cats = Object.keys(LABELS).filter(c => deals.some(d => d.category === c));
-  const items = [["all", "全部", deals.length], ...cats.map(c => [c, LABELS[c], deals.filter(d => d.category === c).length])];
-  $("filters").innerHTML = items.map(([c, label, n]) =>
-    `<button type="button" data-c="${c}" aria-pressed="${c === current}">${label}<span>${n}</span></button>`).join("");
-}
-
-function renderList() {
-  const shown = current === "all" ? deals : deals.filter(d => d.category === current);
-  if (!shown.length) {
-    $("list").innerHTML = `<div class="empty"><strong>最近 ${DAYS} 天没有过线的优惠</strong>价格线定得比较严，有符合的会第一时间出现在这里。${SUBSCRIBE_URL ? `想第一时间知道，可以<a href="${esc(SUBSCRIBE_URL)}" target="_blank" rel="noopener">订阅邮件</a>。` : ""}</div>`;
-    return;
-  }
-  $("list").innerHTML = shown.map(d => {
-    const facts = [LABELS[d.category], COND[d.condition], d.quantity > 1 ? `${d.quantity} 件装` : "", d.store,
-                   SRC[d.source] ? `来自 ${SRC[d.source]}` : "", ago(d.created_at)].filter(Boolean);
-    return `<article class="deal">
-      <h2 class="deal-title"><a href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">${esc(cleanTitle(d.title))}</a></h2>
-      <div class="price-col"><div class="price">${money(d.price)}</div></div>
-      <div class="facts">${d.pinned ? `<span class="pin">置顶</span>` : ""}${facts.map(f => `<span>${esc(f)}</span>`).join("")}</div>
-    </article>`;
-  }).join("");
-}
-
-function renderHero(evaluated) {
-  const kept = deals.length;
-  $("kept").textContent = kept;
-  $("seen").textContent = evaluated || "–";
-  $("ratio").setAttribute("aria-hidden", "false");
-  $("ratio").setAttribute("aria-label", `${evaluated} 条里留下 ${kept} 条`);
-  $("heroText").textContent = evaluated
-    ? `近 ${DAYS} 天，我们评估了 ${evaluated} 条电脑硬件优惠，只留下 ${kept} 条。剩下的，都不够便宜。`
-    : `我们给每类电脑硬件都定了标准。只有真正便宜的优惠，才会出现在这里。`;
-}
-
-$("filters").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  current = b.dataset.c; renderFilters(); renderList();
-});
-
+// ---------- 和数据库通信 ----------
 async function get(path) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: HEADERS });
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
+async function rpc(fn, args) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { ...HEADERS, "Content-Type": "application/json" }, body: JSON.stringify(args || {}) });
+  const text = await r.text();
+  if (!r.ok) { let m = text; try { m = JSON.parse(text).message || text; } catch (e) {} throw new Error(m); }
+  return text ? JSON.parse(text) : null;
+}
+// 访客编号：只用来统计"有多少不同的人搜过这个标签"，不含任何个人信息
+let visitor = null;
+function visitorId() {
+  if (visitor) return visitor;
+  try { visitor = localStorage.getItem("sd_visitor"); } catch (e) {}
+  if (!visitor) {
+    visitor = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem("sd_visitor", visitor); } catch (e) {}
+  }
+  return visitor;
+}
 
-(async () => {
-  const since = new Date(Date.now() - DAYS * 86400000).toISOString();
+// ---------- 搜索：第 1 层联想 + 第 2 层规则拆解（都在浏览器里完成，不用 AI） ----------
+let HOME = { tags: [], synonyms: [], gpus: [] };
+const CAT_PRIORITY = ["laptop", "desktop", "graphics_card", "ssd", "hdd"];   // 同时出现多个品类词时，靠前的优先（"5090显卡的笔记本"是笔记本）
+const FILLERS = ["的", "游戏", "电脑", "优惠", "便宜", "最低价", "低价", "价格", "排行", "内存", "版", "款", "带", "配", "和", "个", "台",
+                 "gaming", "deals", "deal", "with", "geforce", "nvidia", "rtx", "英伟达", "best", "cheap", "price", "pc"];
+// 统一格式：全角转半角、转小写、去掉空格和标点
+const norm = s => String(s || "").normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, "");
+
+function parseQuery(raw) {
+  let s = String(raw || "").normalize("NFKC").toLowerCase();
+  const out = { category: null, gpu: null, capacity: null, ram: null, ok: false, clean: false };
+  // 显卡型号：5090、rtx5080、5070 ti
+  const g = s.match(/(?:rtx|geforce)?\s*(50[5-9]0)\s*(ti(?![a-z]))?/);
+  if (g) {
+    const name = "RTX " + g[1] + (g[2] ? " Ti" : "");
+    if (HOME.gpus.includes(name)) { out.gpu = name; s = s.replace(g[0], "|"); }
+  }
+  // 容量：20tb、4t、1.5 tb
+  const c = s.match(/(\d+(?:\.\d+)?)\s*(?:tb|t)(?![a-z])/);
+  if (c) { out.capacity = Number(c[1]); s = s.replace(c[0], "|"); }
+  // 内存：32g、64gb（第二阶段做筛选时用，现在只是识别出来，不影响标签）
+  const m = s.match(/(\d+)\s*(?:gb|g)(?![a-z])/);
+  if (m) { out.ram = Number(m[1]); s = s.replace(m[0], "|"); }
+  s = s.replace(/\s+/g, "");
+  // 品类：用同义词表，长的词先匹配（"固态硬盘"先于"硬盘"）
+  const cats = new Set();
+  for (const syn of [...HOME.synonyms].sort((a, b) => b.term.length - a.term.length)) {
+    if (s.includes(syn.term)) { cats.add(syn.category); s = s.split(syn.term).join(" "); }
+  }
+  out.category = CAT_PRIORITY.find(k => cats.has(k)) || null;
+  // 剩下的字：去掉没有意义的词以后，如果还有实在的内容，说明规则没看懂，交给后面处理
+  for (const f of FILLERS) s = s.split(f).join(" ");
+  const rest = s.replace(/[\p{P}\p{S}]+/gu, " ");
+  out.clean = !/[一-鿿]{2,}|[a-z0-9]{3,}/.test(rest);
+  if (out.category && ["laptop", "desktop", "graphics_card"].includes(out.category)) out.capacity = null;
+  if (out.category && ["ssd", "hdd"].includes(out.category)) out.gpu = null;
+  out.ok = !!out.category && out.clean;
+  return out;
+}
+
+function suggestions(raw) {
+  const n = norm(raw);
+  if (!n) return [];
+  const p = parseQuery(raw);
+  const hasParts = p.category || p.gpu || p.capacity;
+  const typing = new Set(HOME.synonyms.filter(x => x.term.startsWith(n)).map(x => x.category));   // 品类词打到一半，比如"笔记"
+  const scored = [];
+  for (const t of HOME.tags) {
+    const texts = [t.name, t.name_en, t.slug, ...(t.aliases || [])].map(norm);
+    let score = 0;
+    if (texts.includes(n)) score = 3;
+    else if (texts.some(x => x && x.includes(n))) score = 1;
+    if (!score && hasParts && t.kind === "structured") {
+      const fits = (!p.category || t.category === p.category) && (!p.gpu || t.gpu === p.gpu) && (!p.capacity || Number(t.capacity_tb) === p.capacity);
+      const exact = t.category === p.category && (t.gpu || null) === p.gpu && (t.capacity_tb == null ? null : Number(t.capacity_tb)) === p.capacity;
+      if (exact && p.clean) score = 3; else if (fits) score = 1;
+    }
+    if (!score && t.kind === "structured" && typing.has(t.category)) score = 1;
+    if (score) scored.push([score, t]);
+  }
+  if (!scored.length && p.category) {                  // 没有完全对得上的（比如 20TB 硬盘还没有标签），就推荐这个品类的标签
+    for (const t of HOME.tags) if (t.kind === "structured" && t.category === p.category && !t.gpu && t.capacity_tb == null) scored.push([1, t]);
+  }
+  scored.sort((a, b) => b[0] - a[0] || b[1].heat - a[1].heat || b[1].deals - a[1].deals);
+  return scored.slice(0, 5).map(x => x[1]);
+}
+
+// 搜索框（首页和标签页各一个，共用这段代码）
+function mountSearch(el, missEl) {
+  el.innerHTML = `<form role="search" autocomplete="off">
+      <input type="search" enterkeyhint="search" aria-label="${esc(T.searchBtn)}" placeholder="${esc(T.placeholder)}" maxlength="60"
+             role="combobox" aria-expanded="false" aria-autocomplete="list">
+      <button class="go" type="submit" aria-label="${esc(T.searchBtn)}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></button>
+    </form><ul class="suggest" role="listbox" hidden></ul>`;
+  const input = el.querySelector("input"), list = el.querySelector(".suggest");
+  let items = [], active = -1;
+  const close = () => { list.hidden = true; el.classList.remove("open"); input.setAttribute("aria-expanded", "false"); active = -1; };
+  const draw = () => {
+    items = suggestions(input.value);
+    if (!items.length) return close();
+    list.innerHTML = items.map((t, i) => `<li role="option" data-i="${i}" aria-selected="${i === active}"><span>${esc(tagName(t))}</span>${t.deals ? `<small>${esc(T.dealsCount(t.deals))}</small>` : ""}</li>`).join("");
+    list.hidden = false; el.classList.add("open"); input.setAttribute("aria-expanded", "true");
+  };
+  input.addEventListener("input", () => { active = -1; missEl.hidden = true; draw(); });
+  input.addEventListener("focus", draw);
+  input.addEventListener("keydown", e => {
+    if (list.hidden) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      active = (active + (e.key === "ArrowDown" ? 1 : -1) + items.length + 1) % (items.length + 1);
+      if (active === items.length) active = -1;
+      draw();
+    } else if (e.key === "Escape") close();
+  });
+  list.addEventListener("mousedown", e => {          // mousedown 先于输入框失去焦点
+    const li = e.target.closest("li"); if (!li) return;
+    e.preventDefault(); const t = items[Number(li.dataset.i)]; close(); openTag(t.slug, input.value);
+  });
+  input.addEventListener("blur", () => setTimeout(close, 120));
+  el.querySelector("form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const raw = input.value.trim(); if (!raw) return;
+    const picked = active >= 0 ? items[active] : null;
+    close(); input.blur();
+    if (picked) return openTag(picked.slug, raw);
+    await search(raw, missEl);
+  });
+  return input;
+}
+
+async function search(raw, missEl) {
+  await homeReady;                                   // 等标签和同义词加载完
+  const n = norm(raw);
+  // 第 1 层：和某个标签的名字或别名完全一样
+  const exact = HOME.tags.find(t => [t.name, t.name_en, ...(t.aliases || [])].map(norm).includes(n));
+  if (exact) return openTag(exact.slug, raw);
+  // 第 2 层：规则拆解
+  const p = parseQuery(raw);
+  if (p.ok) {
+    const known = HOME.tags.find(t => t.kind === "structured" && t.category === p.category && (t.gpu || null) === p.gpu
+                                      && (t.capacity_tb == null ? null : Number(t.capacity_tb)) === p.capacity);
+    if (known) return openTag(known.slug, raw);
+    try {
+      const slug = await rpc("public_resolve_tag", { p_category: p.category, p_gpu: p.gpu, p_capacity_tb: p.capacity });
+      if (slug) return openTag(slug, raw);
+    } catch (e) { return showMiss(raw, missEl, e.message); }
+  }
+  // 都没匹配上：显示相关标签和"新建标签"按钮
+  rpc("public_log_miss", { p_query: n, p_visitor: visitorId() }).catch(() => {});
+  showMiss(raw, missEl);
+}
+
+function showMiss(raw, missEl, errorText) {
+  const related = suggestions(raw);
+  missEl.innerHTML = `<p><strong>${esc(T.missTitle(raw))}</strong></p>
+    ${related.length ? `<p>${esc(T.missRelated)}</p><ul class="chips">${related.map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("")}</ul>` : ""}
+    <button class="primary" type="button">${esc(T.createBtn(raw))}</button>
+    <p class="hint" role="status">${esc(errorText || T.createHint)}</p>`;
+  missEl.hidden = false;
+  const btn = missEl.querySelector("button"), hint = missEl.querySelector(".hint");
+  btn.addEventListener("click", async () => {
+    btn.disabled = true; btn.textContent = T.creating;
+    try {
+      // 第 3 层：只有点了这个按钮才会用到 AI（在服务器上运行）
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/create-tag`, { method: "POST", headers: { ...HEADERS, "Content-Type": "application/json" }, body: JSON.stringify({ query: raw }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.slug) { missEl.hidden = true; return openTag(d.slug, raw); }
+      hint.textContent = d.error === "limited" ? T.errLimited : d.error === "not_product" ? T.errNotProduct : T.errServer;
+    } catch (e) { hint.textContent = T.errServer; }
+    btn.disabled = false; btn.textContent = T.createBtn(raw);
+  });
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest("a[data-slug], a[data-home]");
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+  e.preventDefault();
+  if (a.dataset.slug) openTag(a.dataset.slug, null); else goHome();
+});
+
+// ---------- 页面切换 ----------
+function openTag(slug, query) {
+  history.pushState({}, "", "?t=" + encodeURIComponent(slug));
+  showTag(slug, query);
+}
+function goHome() { history.pushState({}, "", location.pathname); showHome(); }
+window.addEventListener("popstate", route);
+function route() {
+  const slug = new URLSearchParams(location.search).get("t");
+  if (slug) showTag(slug, null); else showHome();
+}
+
+// ---------- 优惠条目 ----------
+function dealHtml(d, opts = {}) {
+  const facts = [opts.showCategory ? T.categories[d.category] : "", T.conditions[d.condition], d.quantity > 1 ? T.pack(d.quantity) : "", d.store,
+                 SRC[d.source] ? T.from(SRC[d.source]) : "", opts.found ? T.found(ago(d.created_at)) : ago(d.created_at)].filter(Boolean);
+  return `<article class="deal ${opts.rank ? "r" : ""}">
+    ${opts.rank ? `<div class="rank">${opts.rank}</div>` : ""}
+    <h3 class="deal-title"><a href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">${esc(cleanTitle(d.title))}</a></h3>
+    <div class="price-col"><div class="price">${money(d.price)}</div>${d.per_tb != null ? `<div class="per">${esc(T.perTb(money(d.per_tb, true)))}</div>` : ""}</div>
+    <div class="facts">${d.pinned ? `<span class="pin">${esc(T.pinned)}</span>` : ""}${facts.map(f => `<span>${esc(f)}</span>`).join("")}</div>
+  </article>`;
+}
+
+// 合并重复：同一商家、价格相差 2% 以内、标题相似的，只保留最新的一条
+function titleWords(t) { return new Set(cleanTitle(t).toLowerCase().split(/[^a-z0-9一-鿿]+/).filter(w => w.length > 1)); }
+function similar(a, b) {
+  const A = titleWords(a), B = titleWords(b); if (!A.size || !B.size) return 0;
+  let both = 0; for (const w of A) if (B.has(w)) both++;
+  return both / (A.size + B.size - both);
+}
+function dedupe(list) {
+  const kept = [];
+  for (const d of [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))) {
+    const dup = kept.some(k => norm(k.store) === norm(d.store) && Math.abs(k.price - d.price) / Math.max(k.price, d.price) <= 0.02 && similar(k.title, d.title) >= 0.6);
+    if (!dup) kept.push(d);
+  }
+  return list.filter(d => kept.includes(d));
+}
+
+// ---------- 首页 ----------
+let featuredLoaded = false;
+async function showHome() {
+  $("viewTag").hidden = true; $("viewHome").hidden = false; $("missHome").hidden = true;
+  document.title = T.homeTitle;
+  homeInput.value = "";
+  if (featuredLoaded) return;
+  featuredLoaded = true;
+  $("featuredTitle").textContent = T.featured;
+  $("featured").innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
+  const since = new Date(Date.now() - FEATURED_DAYS * 86400000).toISOString();
   try {
     const [rows, runs] = await Promise.all([
-      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=300`),
-      get(`runs?select=finished_at,new_deals&finished_at=gte.${since}&order=finished_at.desc&limit=5000`).catch(() => []),
+      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=100`),
+      get(`runs?select=finished_at&order=finished_at.desc&limit=1`).catch(() => []),
     ]);
-    deals = rows;
-    const evaluated = Math.max(runs.reduce((s, r) => s + (r.new_deals || 0), 0), deals.length);
-    renderHero(runs.length ? evaluated : 0);
-    renderFilters(); renderList();
-    $("status").textContent = runs.length ? `上次检查在 ${ago(runs[0].finished_at)}。价格以商家页面为准。` : "价格以商家页面为准。";
+    $("featured").innerHTML = rows.length ? rows.map(d => dealHtml(d, { showCategory: true })).join("")
+      : `<div class="empty"><strong>${esc(T.featuredEmpty)}</strong>${esc(T.featuredEmptyHint)}</div>`;
+    $("status").textContent = runs.length ? T.lastCheck(ago(runs[0].finished_at)) : T.priceNote;
   } catch (e) {
-    $("list").innerHTML = `<div class="empty"><strong>暂时读不到数据</strong>请稍后刷新页面。</div>`;
+    featuredLoaded = false;
+    $("featured").innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`;
   }
-})();
+}
+function renderHotTags() {
+  $("hotTags").innerHTML = HOME.tags.filter(t => t.deals > 0 || t.heat > 0).slice(0, HOT_TAGS)
+    .map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("");
+}
+
+// ---------- 标签页 ----------
+let tagRequest = 0;
+async function showTag(slug, query) {
+  $("viewHome").hidden = true; $("viewTag").hidden = false; $("missTag").hidden = true;
+  window.scrollTo(0, 0);
+  const body = $("tagBody"), mine = ++tagRequest;
+  body.innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
+  let data;
+  try { data = await rpc("public_tag_deals", { p_slug: slug, p_visitor: visitorId(), p_query: query ? norm(query) : null }); }
+  catch (e) { if (mine === tagRequest) body.innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`; return; }
+  if (mine !== tagRequest) return;
+  if (!data) {
+    body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="./" data-home>${esc(T.backHome)}</a></div>`;
+    return;
+  }
+  const tag = data.tag, name = tagName(tag), deals = dedupe(data.deals);
+  if (tag.slug !== slug) history.replaceState({}, "", "?t=" + encodeURIComponent(tag.slug));   // 被合并的旧网址跳到新标签
+  document.title = T.pageTitle(name);
+  tagInput.value = name;
+  const intro = !deals.length ? "" : tag.kind === "keyword" ? T.rankKeyword(deals.length) : tag.per_tb ? T.rankPerTb(deals.length) : T.rankTotal(deals.length);
+  const isNew = Date.now() - new Date(tag.created_at || 0) < 2 * 86400000;
+  body.innerHTML = `
+    <div class="tag-head"><h1>${esc(name)}</h1>${intro ? `<p>${esc(intro)}</p>` : ""}</div>
+    <form class="sub" id="subForm" novalidate>
+      <h2>${esc(T.subTitle(name))}</h2>
+      <div class="row">
+        <input type="email" name="email" placeholder="${esc(T.subEmail)}" aria-label="${esc(T.subEmail)}" autocomplete="email">
+        <button class="primary" type="submit">${esc(T.subBtn)}</button>
+      </div>
+      <div class="freq">
+        <label><input type="radio" name="frequency" value="daily" checked>${esc(T.subDaily)}</label>
+        <label><input type="radio" name="frequency" value="instant">${esc(T.subInstant)}</label>
+      </div>
+      <p class="msg" role="status" hidden></p>
+    </form>
+    ${deals.length
+      ? `<div class="ranked">${deals.map((d, i) => dealHtml(d, { rank: i + 1, found: true, showCategory: tag.kind === "keyword" })).join("")}</div>`
+      : `<div class="empty"><strong>${esc(T.tagEmpty)}</strong>${esc(tag.kind === "keyword" || isNew ? T.tagEmptyNew : T.tagEmptyOld)}</div>`}`;
+  // 订阅：第一阶段只有界面。字段（邮箱、标签、频率）就是第二阶段要保存的内容
+  $("subForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const f = e.target, msg = f.querySelector(".msg");
+    const sub = { email: f.email.value.trim(), tag: tag.slug, frequency: f.frequency.value };
+    msg.hidden = false;
+    msg.textContent = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sub.email) ? T.subSoon : T.subBadEmail;
+  });
+}
+
+// ---------- 启动 ----------
+const homeReady = rpc("public_home").then(d => { HOME = d; renderHotTags(); }).catch(() => {});
+const homeInput = mountSearch($("searchHome"), $("missHome"));
+const tagInput = mountSearch($("searchTag"), $("missTag"));
+route();
+
 </script>
 </body>
 </html>

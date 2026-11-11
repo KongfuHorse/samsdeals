@@ -131,6 +131,7 @@
 
   <div class="tabs" id="tabs">
     <button data-tab="deals" class="on">优惠管理<span class="count hidden" id="reviewCount"></span></button>
+    <button data-tab="tags">标签<span class="count hidden" id="tagCount"></span></button>
     <button data-tab="rules">价格规则</button>
     <button data-tab="adjustments">调整规则</button>
     <button data-tab="options">下拉选项</button>
@@ -175,6 +176,82 @@
     <ul class="dl" id="listHidden"></ul>
     <div class="sub"><h3>最近删除</h3><span class="muted small">30 天内，可以恢复</span></div>
     <ul class="dl" id="listRemoved"></ul>
+  </section>
+
+  <!-- 标签 -->
+  <section id="tab-tags" class="hidden">
+    <div class="card">
+      <div class="toolbar">
+        <div>
+          <h2 id="tgHeading">标签</h2>
+          <div class="muted small">用户搜索时匹配到的就是这些标签。"已公开"的标签会出现在搜索联想和首页的热门标签里：你批准了，或者被足够多不同的人搜过，就会公开。</div>
+        </div>
+        <button class="primary" id="tgNew">+ 新建标签</button>
+      </div>
+      <div id="tgForm" class="hidden" style="border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:12px">
+        <div class="row" style="margin-bottom:6px">
+          <label class="small">类型<br><select id="tgKind"><option value="structured">按品类和型号</option><option value="keyword">按标题关键词</option></select></label>
+          <label class="small tg-s">品类<br><select id="tgCat"></select></label>
+          <label class="small tg-s">显卡<br><select id="tgGpu"></select></label>
+          <label class="small tg-s">容量 TB<br><input id="tgCap" type="number" min="0" step="0.5" style="width:90px" placeholder="不限"></label>
+          <label class="small tg-k" style="flex:1 1 220px">关键词（标题里都要包含，用英文逗号隔开）<br><input id="tgKw" style="width:100%" placeholder="macbook air, m4"></label>
+        </div>
+        <div class="row">
+          <label class="small" style="flex:1 1 160px">显示名<br><input id="tgName" style="width:100%" placeholder="按品类和型号的可以不填"></label>
+          <label class="small" style="flex:1 1 160px">英文名（可不填）<br><input id="tgNameEn" style="width:100%"></label>
+          <label class="small" style="flex:2 1 220px">别名（用英文逗号隔开）<br><input id="tgAliases" style="width:100%" placeholder="5090本, 5090 gaming laptop"></label>
+          <label class="small" style="display:flex; align-items:center; gap:8px; padding-bottom:6px"><span class="switch"><input type="checkbox" id="tgApproved" checked><span></span></span>已批准</label>
+          <button class="primary" id="tgSave">保存</button>
+          <button id="tgCancel">取消</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>标签</th><th>条件</th><th>状态</th><th>创建方式</th><th>不同访客</th><th>订阅</th><th></th></tr></thead>
+          <tbody id="tgBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>标签设置</h2>
+        <div class="row" style="margin-top:8px">
+          <label class="small">多少个不同访客搜过就公开<br><input id="tsMin" type="number" min="1" style="width:110px"></label>
+          <label class="small">每个访客每天最多新建<br><input id="tsDaily" type="number" min="0" style="width:110px"></label>
+          <label class="small">自动来源最多几个<br><input id="tsMax" type="number" min="0" style="width:110px"></label>
+          <label class="small">自动来源几天没结果就停用<br><input id="tsStale" type="number" min="1" style="width:110px"></label>
+          <button class="primary" id="tsSave">保存</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>同义词</h2>
+        <div class="muted small">用户输入里出现这些词，就会被认成对应的品类。比如"笔电"算游戏本。</div>
+        <div id="synList"></div>
+        <div class="row">
+          <label class="small">词语<br><input id="synTerm" placeholder="手提电脑"></label>
+          <label class="small">品类<br><select id="synCat"></select></label>
+          <button class="primary" id="synAdd">添加</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>自动来源</h2>
+      <div class="muted small" style="margin-bottom:6px">用户新建了不在品类范围内的标签时，会自动加一个 Slickdeals 搜索。太久没有结果，或者数量超过上限时，会自动停用。</div>
+      <div id="autoList"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>热门搜索</h2><div class="muted small">近 30 天</div>
+        <div class="table-wrap"><table style="min-width:300px"><thead><tr><th>标签</th><th>次数</th><th>不同访客</th></tr></thead><tbody id="topBody"></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2>没有结果的搜索</h2><div class="muted small">近 30 天。这些是用户想要、但我们还没有的。</div>
+        <div class="table-wrap"><table style="min-width:300px"><thead><tr><th>搜索内容</th><th>次数</th><th>最近</th></tr></thead><tbody id="missBody"></tbody></table></div>
+      </div>
+    </div>
   </section>
 
   <!-- 价格规则 -->
@@ -373,8 +450,12 @@ async function enterApp() {
   await reload();
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
 }
+let tagData = null;
 async function reload() {
-  data = await rpc("admin_get_all", { p_token: token });
+  [data, tagData] = await Promise.all([
+    rpc("admin_get_all", { p_token: token }),
+    rpc("admin_tags_get", { p_token: token }).catch(() => null),
+  ]);
   renderAll();
 }
 
@@ -382,7 +463,7 @@ async function reload() {
 $("tabs").addEventListener("click", e => {
   const tab = e.target.dataset.tab; if (!tab) return;
   [...$("tabs").children].forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
-  ["deals", "rules", "adjustments", "options", "sources", "refresh"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== tab));
+  ["deals", "tags", "rules", "adjustments", "options", "sources", "refresh"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== tab));
 });
 
 function optionsOf(field) { return data.options.filter(o => o.field === field && o.active); }
@@ -397,7 +478,7 @@ function markDirty(tr) { tr.classList.add("dirty"); }
 function renderAll() {
   const s = data.deal_stats || {}, last = data.runs[0];
   $("summary").textContent = `正在展示 ${s.passed || 0} 条，待审核 ${s.review || 0} 条。上次抓取：${last ? ago(last.finished_at) : "还没有记录"}。`;
-  renderDeals(); renderRules(); renderAdjustments(); renderOptions(); renderSources(); renderRefresh();
+  renderDeals(); renderTags(); renderRules(); renderAdjustments(); renderOptions(); renderSources(); renderRefresh();
 }
 
 // ---------- 优惠管理 ----------
@@ -510,6 +591,130 @@ $("saveReview").addEventListener("click", async () => {
     await rpc("admin_save_review_settings", { p_token: token, p_discount_pct: Number($("reviewPct").value), p_unknown_store: $("reviewStore").checked });
     toast("已保存，下次抓取开始生效"); await reload();
   } catch (e) { toast("保存失败：" + e.message, true); }
+});
+
+// ---------- 标签 ----------
+const TAG_BY = { admin: "后台", rule: "规则", ai: "AI" };
+let tgEditing = null, tgMerging = null;
+function tagCond(t) {
+  if (t.kind === "keyword") return "标题包含：" + (t.conditions.keywords || []).join(" + ");
+  const c = t.conditions;
+  return [CAT_NAMES[c.category] || c.category, c.gpu, c.capacity_tb != null ? c.capacity_tb + "TB" : ""].filter(Boolean).join("，");
+}
+function renderTags() {
+  if (!tagData) { $("tgBody").innerHTML = `<tr><td colspan="7" class="muted">读不到标签数据。请确认数据库已经运行过 schema_tags.sql。</td></tr>`; return; }
+  const cats = tagData.options.filter(o => o.field === "category"), gpus = tagData.options.filter(o => o.field === "gpu");
+  const catOpts = cats.map(o => `<option value="${esc(o.value)}">${esc(o.label || o.value)}</option>`).join("");
+  $("tgCat").innerHTML = catOpts; $("synCat").innerHTML = catOpts;
+  $("tgGpu").innerHTML = `<option value="">不限</option>` + gpus.map(o => `<option value="${esc(o.value)}">${esc(o.value)}</option>`).join("");
+  const live = tagData.tags.filter(t => !t.merged_into);
+  const waiting = live.filter(t => !t.approved).length;
+  $("tagCount").textContent = waiting; $("tagCount").classList.toggle("hidden", !waiting);
+  $("tgBody").innerHTML = tagData.tags.map(t => {
+    const status = t.merged_into ? `已合并到「${esc(t.merged_into_name || "")}」` : [t.approved ? "已批准" : "未批准", t.is_public ? "已公开" : "未公开"].join("，");
+    let actions;
+    if (t.merged_into) actions = `<button class="danger" data-tg-del="${t.id}">删除</button>`;
+    else if (tgMerging === t.id) actions = `<select id="tgMergeTo">${live.filter(x => x.id !== t.id).map(x => `<option value="${x.id}">${esc(x.name_zh)}</option>`).join("")}</select>
+        <button class="primary" data-tg-merge-ok="${t.id}">合并进去</button><button data-tg-merge-cancel="1">取消</button>`;
+    else actions = `<button class="${t.approved ? "" : "primary"}" data-tg-approve="${t.id}" data-on="${t.approved ? 0 : 1}">${t.approved ? "取消批准" : "批准"}</button>
+        <button data-tg-edit="${t.id}">编辑</button><button data-tg-merge="${t.id}">合并</button><button class="danger" data-tg-del="${t.id}">删除</button>`;
+    return `<tr class="${t.merged_into ? "inactive" : ""}">
+      <td style="min-width:150px"><a href="./?t=${encodeURIComponent(t.slug)}" target="_blank" rel="noopener" style="color:var(--text); font-weight:600">${esc(t.name_zh)}</a>
+        ${t.aliases.length ? `<div class="muted small">别名：${esc(t.aliases.join("、"))}</div>` : ""}</td>
+      <td class="small">${esc(tagCond(t))}</td><td class="small" style="white-space:nowrap">${status}</td>
+      <td class="small">${TAG_BY[t.created_by] || t.created_by}</td><td>${t.visitors}</td><td>${t.subscribers}</td>
+      <td><div class="actions">${actions}</div></td></tr>`;
+  }).join("") || `<tr><td colspan="7" class="muted">还没有标签</td></tr>`;
+
+  const st = tagData.settings;
+  $("tsMin").value = st.tag_public_min_visitors; $("tsDaily").value = st.tag_daily_limit;
+  $("tsMax").value = st.auto_source_max; $("tsStale").value = st.auto_source_stale_days;
+
+  $("synList").innerHTML = cats.map(c => {
+    const list = tagData.synonyms.filter(x => x.category === c.value);
+    return `<div class="small muted" style="margin-top:8px">${esc(c.label || c.value)}</div><div class="chips">${list.map(x => `<span class="chip">${esc(x.term)}<button data-syn-del="${x.id}" title="删除">×</button></span>`).join("") || `<span class="muted small">没有</span>`}</div>`;
+  }).join("");
+
+  $("autoList").innerHTML = tagData.auto_sources.map(a => `
+    <div class="source">
+      <label class="switch"><input type="checkbox" data-auto-key="${esc(a.key)}" ${a.enabled ? "checked" : ""}><span></span></label>
+      <div class="info">
+        <div>${esc(a.tag || a.name)}<span class="badge">${a.enabled ? "抓取中" : "已停用"}</span></div>
+        <div class="url">${esc(a.url)}</div>
+        <div class="muted small">添加于 ${ago(a.created_at)}，${a.last_hit_at ? "最近一次有结果：" + ago(a.last_hit_at) : "还没有过结果"}</div>
+      </div>
+    </div>`).join("") || `<div class="muted small">还没有自动来源</div>`;
+
+  $("topBody").innerHTML = tagData.top_searches.map(x => `<tr><td>${esc(x.tag)}</td><td>${x.searches}</td><td>${x.visitors}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">还没有搜索记录</td></tr>`;
+  $("missBody").innerHTML = tagData.misses.map(x => `<tr><td>${esc(x.query)}</td><td>${x.searches}</td><td class="small muted">${ago(x.last_at)}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">没有</td></tr>`;
+}
+function tgFormMode() {
+  const kw = $("tgKind").value === "keyword";
+  document.querySelectorAll(".tg-s").forEach(e => e.classList.toggle("hidden", kw));
+  document.querySelectorAll(".tg-k").forEach(e => e.classList.toggle("hidden", !kw));
+}
+function tgOpenForm(t) {
+  tgEditing = t ? t.id : null;
+  $("tgForm").classList.remove("hidden");
+  $("tgHeading").textContent = t ? `编辑标签「${t.name_zh}」` : "新建标签";
+  $("tgKind").value = t ? t.kind : "structured"; $("tgKind").disabled = !!t;
+  $("tgName").value = t ? t.name_zh : ""; $("tgNameEn").value = t ? (t.name_en || "") : "";
+  $("tgAliases").value = t ? t.aliases.join(", ") : "";
+  $("tgCat").value = t && t.conditions.category ? t.conditions.category : $("tgCat").options[0]?.value;
+  $("tgGpu").value = t && t.conditions.gpu ? t.conditions.gpu : "";
+  $("tgCap").value = t && t.conditions.capacity_tb != null ? t.conditions.capacity_tb : "";
+  $("tgKw").value = t && t.conditions.keywords ? t.conditions.keywords.join(", ") : "";
+  $("tgApproved").checked = t ? t.approved : true;
+  tgFormMode(); $("tgForm").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+function tgCloseForm() { tgEditing = null; $("tgForm").classList.add("hidden"); $("tgHeading").textContent = "标签"; }
+const splitList = v => v.split(/[,，]/).map(x => x.trim()).filter(Boolean);
+$("tgKind").addEventListener("change", tgFormMode);
+$("tgNew").addEventListener("click", () => tgOpenForm(null));
+$("tgCancel").addEventListener("click", tgCloseForm);
+$("tgSave").addEventListener("click", async () => {
+  const tag = { id: tgEditing, kind: $("tgKind").value, name_zh: $("tgName").value.trim(), name_en: $("tgNameEn").value.trim(),
+                aliases: splitList($("tgAliases").value), category: $("tgCat").value, gpu: $("tgGpu").value,
+                capacity_tb: $("tgCap").value, keywords: splitList($("tgKw").value), approved: $("tgApproved").checked };
+  try { await rpc("admin_tag_save", { p_token: token, p_tag: tag }); toast("已保存"); tgCloseForm(); await reload(); }
+  catch (e) { toast("保存失败：" + e.message, true); }
+});
+$("tab-tags").addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  try {
+    if (d.tgApprove) { await rpc("admin_tag_approve", { p_token: token, p_id: Number(d.tgApprove), p_approved: d.on === "1" }); toast(d.on === "1" ? "已批准" : "已取消批准"); await reload(); }
+    else if (d.tgEdit) tgOpenForm(tagData.tags.find(t => t.id === Number(d.tgEdit)));
+    else if (d.tgMerge) { tgMerging = Number(d.tgMerge); renderTags(); }
+    else if (d.tgMergeCancel) { tgMerging = null; renderTags(); }
+    else if (d.tgMergeOk) {
+      const into = Number($("tgMergeTo").value);
+      if (!confirm("合并后，这个标签的别名和搜索记录会并到目标标签里，旧网址会自动跳转。确定合并？")) return;
+      await rpc("admin_tag_merge", { p_token: token, p_from: Number(d.tgMergeOk), p_into: into }); tgMerging = null; toast("已合并"); await reload();
+    }
+    else if (d.tgDel) {
+      if (!confirm("删除这个标签？它的搜索记录和自动来源也会一起删除。")) return;
+      await rpc("admin_tag_delete", { p_token: token, p_id: Number(d.tgDel) }); toast("已删除"); await reload();
+    }
+    else if (d.synDel) { await rpc("admin_synonym_delete", { p_token: token, p_id: Number(d.synDel) }); toast("已删除"); await reload(); }
+  } catch (err) { toast("操作失败：" + err.message, true); }
+});
+$("synAdd").addEventListener("click", async () => {
+  try { await rpc("admin_synonym_save", { p_token: token, p_term: $("synTerm").value, p_category: $("synCat").value }); $("synTerm").value = ""; toast("已添加"); await reload(); }
+  catch (e) { toast("添加失败：" + e.message, true); }
+});
+$("tsSave").addEventListener("click", async () => {
+  try {
+    await rpc("admin_tag_settings_save", { p_token: token, p_min_visitors: Number($("tsMin").value), p_source_max: Number($("tsMax").value),
+                                           p_stale_days: Number($("tsStale").value), p_daily_limit: Number($("tsDaily").value) });
+    toast("已保存"); await reload();
+  } catch (e) { toast("保存失败：" + e.message, true); }
+});
+$("autoList").addEventListener("change", async e => {
+  const key = e.target.dataset.autoKey; if (!key) return;
+  const on = e.target.checked;
+  try { await rpc("admin_set_source", { p_token: token, p_key: key, p_enabled: on }); toast(on ? "已启用" : "已停用"); await reload(); }
+  catch (err) { e.target.checked = !on; toast("保存失败：" + err.message, true); }
 });
 
 // ---------- 价格规则 ----------

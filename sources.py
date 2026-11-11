@@ -26,7 +26,7 @@ DEAL_TITLE = re.compile(r"(deal|save |saving|\$\d|% off|lowest price|record low|
 
 def source_label(key):
     """存进 deals 表的来源名，网站上显示用"""
-    if key.startswith("sd_"):
+    if key.startswith("sd_") or key.startswith("auto_"):
         return "slickdeals"
     if key.startswith("reddit"):
         return "reddit"
@@ -64,20 +64,29 @@ def _clean_link(link):
 
 
 def fetch_posts(sources):
-    items, seen = [], set()
-    for src in sources:
-        if src["kind"] != "post_rss" or not src["enabled"]:
-            continue
+    """返回 (帖子列表, 这次有相关结果的自动来源的 key)。
+    自动来源 = 用户新建标签时自动加的 Slickdeals 搜索（sources 表里 auto = true）。
+    它们的帖子不走关键词粗筛（否则 MacBook 这类不在品类里的标题会被丢掉），
+    改成只保留标题里包含这个标签全部关键词的帖子。"""
+    items, seen, hits = [], set(), set()
+    active = [s for s in sources if s["kind"] == "post_rss" and s["enabled"]]
+    for src in sorted(active, key=lambda s: not s.get("auto")):       # 自动来源先处理，避免被别的来源去重掉
         source = source_label(src["key"])
+        auto, keywords = bool(src.get("auto")), [k.lower() for k in src.get("tag_keywords") or []]
         for e in _parse(src["url"]):
             link, title = _clean_link(e.get("link")), (e.get("title") or "").strip()
-            if not link or not title or link in seen or _too_old(e):
+            if not link or not title or _too_old(e):
+                continue
+            relevant = auto and keywords and all(k in title.lower() for k in keywords)
+            if relevant:
+                hits.add(src["key"])
+            if link in seen:
                 continue
             seen.add(link)
-            if KEYWORDS.search(title):
+            if relevant or KEYWORDS.search(title):
                 items.append({"title": title, "url": link, "source": source})
-    print(f"帖子：抓到 {len(seen)} 条，关键词粗筛后 {len(items)} 条")
-    return items
+    print(f"帖子：抓到 {len(seen)} 条，筛选后 {len(items)} 条")
+    return items, hits
 
 
 def html_to_text(html):
