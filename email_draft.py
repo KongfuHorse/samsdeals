@@ -26,7 +26,7 @@ CONDITION_LABELS = {"new": "全新", "open_box": "开箱", "refurb": "翻新", "
 SOURCE_LABELS = {"slickdeals": "Slickdeals", "reddit": "Reddit", "tomshardware": "Tom's Hardware", "techradar": "TechRadar", "woot": "Woot"}
 
 
-SITE_URL = "https://kongfuhorse.github.io/samsdeals/"
+SITE_URL = "https://subdeals.net/"
 INK, MUTED, FAINT, LINE, SEAL, PAPER = "#17202A", "#5D6772", "#8B949E", "#D3D9DE", "#BE3A2E", "#ECEFF1"
 FONT = "-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',Helvetica,Arial,sans-serif"
 

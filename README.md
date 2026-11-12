@@ -15,7 +15,7 @@ AI 新建标签需要两个保密变量，在 Supabase 后台 → Edge Functions
 
 ## 后台
 
-网址：**https://kongfuhorse.github.io/samsdeals/admin.html**
+网址：**https://subdeals.net/admin.html**
 
 - 优惠管理：手动添加优惠并可置顶；审核异常低价或商家不明的优惠；隐藏、删除正在展示的优惠，随时恢复
 - 标签：批准、编辑、合并、删除、新建标签；同义词；搜索统计；自动来源；标签设置
