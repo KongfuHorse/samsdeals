@@ -134,7 +134,14 @@ def dry_run_article():
 
 
 def _ts(text):
-    return datetime.fromisoformat(text.replace("Z", "+00:00")) if text else None
+    if not text:
+        return None
+    text = text.replace("Z", "+00:00")
+    # Python 3.9 只认 3 位或 6 位小数，数据库给的位数不固定，统一补成 6 位
+    m = re.match(r"^(.*T\d\d:\d\d:\d\d)(?:\.(\d+))?(.*)$", text)
+    if m:
+        text = m.group(1) + "." + (m.group(2) or "0").ljust(6, "0")[:6] + m.group(3)
+    return datetime.fromisoformat(text)
 
 
 def should_run(settings, last):
