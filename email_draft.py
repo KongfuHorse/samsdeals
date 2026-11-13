@@ -39,8 +39,11 @@ def money(x, cents=False):
 def clean_title(t):
     """和网站一样：去掉开头的 [GPU] 标签，以及结尾的价格、商家、运费等"""
     t = re.sub(r"^\s*\[[^\]]{1,20}\]\s*", "", t or "")
+    t = re.sub(r"^\s*[-–—•]+\s*", "", t)
     t = re.sub(r"^\s*\$[\d,.]+\*?\s*\|\s*", "", t)
+    t = re.sub(r"\s*[-–:|,]?\s*\(\s*\$[\d,]+(?:\.\d+)?\*?\s*\)\s*$", "", t)
     t = re.sub(r"\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$", "", t, flags=re.I)
+    t = re.sub(r"\s*\[[^\]]{1,30}\]\s*$", "", t)
     t = re.sub(r"\s+@\s+[\w .'&-]+$", "", t)
     t = re.sub(r"\s*[-–:|,]\s*$", "", t)
     return t.strip()

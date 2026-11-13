@@ -340,8 +340,11 @@ function ago(t) {
 function cleanTitle(t) {
   return String(t || "")
     .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")
+    .replace(/^\s*[-–—•]+\s*/, "")
     .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")
+    .replace(/\s*[-–:|,]?\s*\(\s*\$[\d,]+(?:\.\d+)?\*?\s*\)\s*$/, "")
     .replace(/\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$/i, "")
+    .replace(/\s*\[[^\]]{1,30}\]\s*$/, "")
     .replace(/\s+@\s+[\w .'&-]+$/, "")
     .replace(/\s*[-–:|,]\s*$/, "")
     .trim();

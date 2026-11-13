@@ -17,12 +17,13 @@ begin
   if v_url !~ '^https?://' then raise exception '链接要以 http:// 或 https:// 开头'; end if;
   if coalesce(nullif(p_deal->>'price','')::numeric, 0) <= 0 then raise exception '请填写价格'; end if;
   if exists (select 1 from deals where url = v_url) then raise exception '这个链接已经存在，不能重复添加'; end if;
-  insert into deals (title, url, source, store, price, price_checked, category, condition, quantity, status, pinned, pinned_at)
+  if coalesce(p_deal->>'image_url', '') <> '' and p_deal->>'image_url' !~ '^https://' then raise exception '图片链接要以 https:// 开头'; end if;
+  insert into deals (title, url, source, store, price, price_checked, category, condition, quantity, status, pinned, pinned_at, image_url)
   values (trim(p_deal->>'title'), v_url, 'manual', nullif(trim(p_deal->>'store'), ''),
           (p_deal->>'price')::numeric, (p_deal->>'price')::numeric,
           p_deal->>'category', coalesce(nullif(p_deal->>'condition',''), 'new'),
           coalesce(nullif(p_deal->>'quantity','')::int, 1), 'passed',
-          v_pin, case when v_pin then now() end)
+          v_pin, case when v_pin then now() end, nullif(trim(p_deal->>'image_url'), ''))
   returning id into v_id;
   return v_id;
 end $$;
@@ -58,7 +59,7 @@ begin
     'deal_stats', (select coalesce(jsonb_object_agg(status, n), '{}') from (select status, count(*) n from deals group by status) y),
     'deals', (select coalesce(jsonb_agg(d order by d.pinned desc, d.pinned_at desc nulls last, d.created_at desc), '[]') from (
                 select id, title, url, source, store, price, price_checked, threshold, category, gpu, capacity_tb,
-                       quantity, condition, status, adjustments_applied, created_at, emailed_at, pinned, pinned_at
+                       quantity, condition, status, adjustments_applied, created_at, emailed_at, pinned, pinned_at, image_url
                 from deals
                 where status in ('review', 'passed', 'hidden')
                    or (status = 'removed' and created_at > now() - interval '30 days')

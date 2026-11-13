@@ -5,27 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Subdeals 后台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f4f4f1; --card:#fff; --text:#16181c; --muted:#6b7078; --line:#e2e2dd; --accent:#0b57d0; --accent-soft:#e8f0fe;
-          --good:#0a7a2f; --bad:#c5221f; --warn:#fff6dc; --input:#fff; }
+  :root { --bg:#FAFAFD; --card:#fff; --text:#1B1A2E; --muted:#6B6985; --line:#E7E6EF; --accent:#4338CA; --accent-soft:#E6E3FF;
+          --good:#0A7A2F; --bad:#C5221F; --warn:#FFF6DC; --input:#fff; --btn:#4338CA; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#121316; --card:#1c1e22; --text:#ececec; --muted:#9a9ea6; --line:#2e3137; --accent:#8ab4f8; --accent-soft:#1f2a3d;
-            --good:#5fd38a; --bad:#f28b82; --warn:#3a3320; --input:#15171a; }
+    :root { --bg:#121220; --card:#1B1A2E; --text:#ECEBF5; --muted:#9A97B5; --line:#2A2940; --accent:#ABA6FF; --accent-soft:#2E2A5C;
+            --good:#5FD38A; --bad:#F28B82; --warn:#3A3320; --input:#151426; --btn:#5046E5; }
   }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", Arial, sans-serif; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif; }
+  .logo { font-size:24px; letter-spacing:-.03em; line-height:1; white-space:nowrap; }
+  .logo span { font-weight:500; } .logo b { font-weight:800; color:var(--accent); }
+  .logo small { font-size:14px; font-weight:600; color:var(--muted); letter-spacing:0; margin-left:8px; }
   .wrap { max-width:1100px; margin:0 auto; padding:20px 16px 60px; }
   h1 { font-size:22px; margin:0; }
   h2 { font-size:16px; margin:0 0 6px; }
   .muted { color:var(--muted); }
   .small { font-size:12px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
-  button { font:inherit; cursor:pointer; border-radius:7px; border:1px solid var(--line); background:var(--card); color:var(--text); padding:6px 12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:14px; }
+  button { font:inherit; cursor:pointer; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--text); padding:6px 12px; }
   button:hover { border-color:var(--muted); }
-  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button.primary { background:var(--btn); border-color:var(--btn); color:#fff; font-weight:600; }
   button.danger { color:var(--bad); }
   button:disabled { opacity:.5; cursor:default; }
-  input, select { font:inherit; color:var(--text); background:var(--input); border:1px solid var(--line); border-radius:6px; padding:5px 7px; min-width:0; }
+  input, select { font:inherit; color:var(--text); background:var(--input); border:1px solid var(--line); border-radius:8px; padding:6px 8px; min-width:0; }
   input:focus, select:focus { outline:2px solid var(--accent); outline-offset:-1px; }
   label { display:block; }
 
@@ -41,7 +47,8 @@
   header a { color:var(--accent); text-decoration:none; }
   .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
   .tabs button { border-radius:999px; }
-  .tabs button.on { background:var(--text); color:var(--bg); border-color:var(--text); }
+  .tabs button { padding:7px 14px; font-weight:600; }
+  .tabs button.on { background:var(--btn); color:#fff; border-color:var(--btn); }
 
   /* 表格 */
   .table-wrap { overflow-x:auto; margin:0 -16px; padding:0 16px; }
@@ -60,7 +67,7 @@
   .switch input { opacity:0; width:0; height:0; }
   .switch span { position:absolute; inset:0; background:var(--line); border-radius:22px; transition:.15s; cursor:pointer; }
   .switch span:before { content:""; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s; }
-  .switch input:checked + span { background:var(--good); }
+  .switch input:checked + span { background:var(--btn); }
   .switch input:checked + span:before { transform:translateX(16px); }
 
   .source { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
@@ -106,7 +113,7 @@
 
 <!-- 登录 -->
 <div id="login" class="card">
-  <h1 style="margin-bottom:4px">Subdeals 后台</h1>
+  <h1 class="logo" style="margin-bottom:10px"><span>sub</span><b>deals</b><small>后台</small></h1>
   <div class="muted small" style="margin-bottom:16px">请登录</div>
   <form id="loginForm">
     <label>账号<input id="username" autocomplete="username" required></label>
@@ -120,7 +127,7 @@
 <div id="app" class="wrap hidden">
   <header>
     <div>
-      <h1>Subdeals 后台</h1>
+      <h1 class="logo" style="margin-bottom:6px"><span>sub</span><b>deals</b><small>后台</small></h1>
       <div class="muted small" id="summary"></div>
     </div>
     <div class="right">
@@ -155,6 +162,9 @@
     <div class="row" style="margin-bottom:6px">
       <label class="small" style="flex:2 1 280px">标题<br><input id="mTitle" style="width:100%" placeholder="比如 ASUS ROG Strix G16 RTX 5080 32GB 2TB"></label>
       <label class="small" style="flex:2 1 240px">链接<br><input id="mUrl" style="width:100%" placeholder="https://"></label>
+    </div>
+    <div class="row" style="margin-bottom:6px">
+      <label class="small" style="flex:1 1 420px">图片链接（可不填，不填就显示品类图标）<br><input id="mImage" style="width:100%" placeholder="https://…/图片.jpg"></label>
     </div>
     <div class="row" style="margin-bottom:6px">
       <label class="small">价格 $<br><input id="mPrice" type="number" min="0" step="0.01" style="width:110px"></label>
@@ -557,6 +567,7 @@ function setEditMode(d) {
   $("cancelEdit").classList.toggle("hidden", !d);
   $("mPinWrap").classList.toggle("hidden", !!d);          // 置顶在列表里单独操作
   $("mTitle").value = d ? d.title : ""; $("mUrl").value = d ? d.url : ""; $("mPrice").value = d ? d.price : "";
+  $("mImage").value = d ? (d.image_url || "") : "";
   $("mStore").value = d ? (d.store || "") : ""; $("mQty").value = d ? (d.quantity || 1) : 1; $("mPinned").checked = false;
   if (d) { $("mCategory").value = d.category; $("mCondition").value = d.condition || "new"; $("mTitle").focus(); }
 }
@@ -570,8 +581,9 @@ $("addManual").addEventListener("click", async () => {
   const deal = {
     title: $("mTitle").value.trim(), url: $("mUrl").value.trim(), price: $("mPrice").value,
     category: $("mCategory").value, condition: $("mCondition").value, store: $("mStore").value.trim(),
-    quantity: $("mQty").value, pinned: $("mPinned").checked,
+    quantity: $("mQty").value, pinned: $("mPinned").checked, image_url: $("mImage").value.trim(),
   };
+  if (deal.image_url && !/^https:\/\//.test(deal.image_url)) { toast("图片链接要以 https:// 开头", true); return; }
   if (!deal.title || !deal.url || !deal.price) { toast("请填写标题、链接和价格", true); return; }
   $("addManual").disabled = true;
   try {
