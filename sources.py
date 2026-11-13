@@ -67,8 +67,16 @@ def _clean_link(link):
 IMG_SRC = re.compile(r"<img[^>]+src=[\"']([^\"']+)[\"']", re.I)
 
 
+PLACEHOLDER_IMAGES = re.compile(r"deal-image-fallback|/image-pool/", re.I)   # Slickdeals 没有商品图时给的默认价签图
+
+
 def _entry_image(e):
     """帖子里的商品图：Slickdeals 写在正文的 <img> 里，Reddit 有时给 media_thumbnail。没有就返回 None"""
+    url = _entry_image_raw(e)
+    return None if url and PLACEHOLDER_IMAGES.search(url) else url
+
+
+def _entry_image_raw(e):
     for t in e.get("media_thumbnail") or []:
         url = t.get("url") or ""
         if url.startswith("https://"):
