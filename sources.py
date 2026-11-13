@@ -37,7 +37,8 @@ def source_label(key):
 # 关键词粗筛：只把可能相关的内容交给 AI，省钱
 KEYWORDS = re.compile(
     r"\b(hdd|hard drive|ssd|nvme|m\.2|\d+\s?tb|rtx|geforce|50[5-9]0|laptop|notebook|"
-    r"desktop|gaming pc|prebuilt|graphics card|gpu|alienware|rog|legion|omen)\b",
+    r"desktop|gaming pc|prebuilt|graphics card|gpu|alienware|rog|legion|omen|"
+    r"macbook|imac|mac mini|mac studio|mac pro|ipad|iphone|airpods|apple watch)\b",
     re.I,
 )
 ARTICLE_MAX_CHARS = 15000   # 文章太长就截断，控制 AI 费用

@@ -11,6 +11,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 from deal_filter import check_deal
+from apple_models import check_apple_key
 from parser import extract_from_article, parse_titles
 
 # 测试模式用的默认选项（和 schema.sql 一致）
@@ -23,7 +24,7 @@ DRY_OPTIONS = {
 
 DB_COLUMNS = ["title", "url", "article_url", "source", "store", "price", "category", "gpu", "ram_gb",
               "capacity_tb", "quantity", "brand", "series", "condition", "status", "price_checked",
-              "threshold", "adjustments_applied", "matched_rule_id", "image_url"]
+              "threshold", "adjustments_applied", "matched_rule_id", "image_url", "apple_model"]
 
 
 GPU_CATEGORIES = ("laptop", "desktop", "graphics_card")
@@ -50,6 +51,13 @@ def judge(row, rules, adjustments, options, text):
         number = re.search(r"\d{4}", gpu)
         if gpu not in options.get("gpu", []) or not number or number.group() not in text:
             row["gpu"] = None                       # AI 给的显卡不在选项里，或原文里没出现，就不信
+    apple = row["apple_model"] = check_apple_key(row.get("apple_model"), row.get("title") or text)
+    if apple and apple not in options.get("apple_model", []):
+        apple = row["apple_model"] = None           # 不在型号表里的不信
+    if apple:
+        row["category"], row["gpu"] = "apple", None  # 苹果设备按型号进标签
+    elif row.get("category") == "apple":
+        row["category"] = "other"                   # 认不出型号的苹果产品（含配件）不进苹果标签
     if row.get("category") in (None, "other"):
         row["status"] = "other"
     elif row["category"] in GPU_CATEGORIES and not row.get("gpu"):

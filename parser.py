@@ -4,6 +4,7 @@ AI 解析：把 deal 标题变成固定格式的字段。
 """
 import os
 import anthropic
+from apple_models import APPLE_PROMPT
 
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-5-5")
 BATCH_SIZE = 20   # 一次发给 AI 的标题数
@@ -11,7 +12,9 @@ BATCH_SIZE = 20   # 一次发给 AI 的标题数
 PROMPT = """You read deal post titles from sites like Slickdeals and r/buildapcsales.
 For each title, extract the product facts. Rules:
 - category: pick one of the allowed values. Use "other" for anything else
-  (monitors, CPUs, accessories, phones, laptops with no RTX 50-series GPU, etc).
+  (monitors, CPUs, accessories, non-Apple phones, laptops with no RTX 50-series GPU, etc).
+  Apple devices (Mac, MacBook, iMac, Mac mini, Mac Studio, Mac Pro, iPad, iPhone, Apple Watch, AirPods)
+  are "apple" when you can set apple_model (see below); otherwise "other".
   A laptop with a discrete GPU is "laptop". A prebuilt PC is "desktop".
   A standalone video card is "graphics_card".
   "hdd" is only for spinning hard drives (internal or external).
@@ -31,11 +34,12 @@ For each title, extract the product facts. Rules:
 - price: final price in USD after coupons/rebates that apply in the cart.
   Do not subtract mail-in rebates. null if no price.
 - store: retailer like Amazon, Best Buy, Newegg, Walmart. Else null.
+""" + APPLE_PROMPT + """
 Return one entry per title, with the same index."""
 
 
 FIELDS = ["category", "gpu", "capacity_tb", "quantity", "ram_gb", "condition",
-          "series", "brand", "price", "store"]
+          "series", "brand", "price", "store", "apple_model"]
 
 
 def field_props(options):
@@ -52,6 +56,7 @@ def field_props(options):
         "brand": {"type": ["string", "null"]},
         "price": {"type": ["number", "null"]},
         "store": {"type": ["string", "null"]},
+        "apple_model": {"type": ["string", "null"], "enum": options.get("apple_model", []) + [None]},
     }
 
 
@@ -106,7 +111,7 @@ ARTICLE_PROMPT = PROMPT.replace(
     "You read deal post titles from sites like Slickdeals and r/buildapcsales.\nFor each title, extract the product facts.",
     """You read deal articles from tech news sites (Tom's Hardware, TechRadar).
 One article may list many products. Return one entry for EACH product deal in the article
-that is an HDD, SSD, gaming laptop, gaming desktop, or graphics card with a current sale price.
+that is an HDD, SSD, gaming laptop, gaming desktop, graphics card, or Apple device with a current sale price.
 Skip products in other categories, products with no current price, and prices that are only
 mentioned as history ("was $X last month"). If there are none, return an empty list.
 For each entry, "title" is a short product name with key specs, like

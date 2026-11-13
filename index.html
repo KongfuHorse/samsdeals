@@ -316,6 +316,8 @@ const I18N = { zh: {
   subDaily: "每天汇总",
   subBtn: "订阅",
   subSoon: "订阅功能即将开放。我们现在不会保存你的邮箱，开放后请再来订阅。",
+  appleChoose: "选一个具体型号：",
+  appleNone: q => `没有找到「${q}」这个型号，看看这些：`,
   subSending: "正在提交…",
   subSent: e => `确认邮件已经发到 ${e}，点里面的链接就订阅成功了。没收到的话，看看垃圾邮件。`,
   subLimited: "提交太多次了，请明天再试。",
@@ -326,7 +328,7 @@ const I18N = { zh: {
   subBadEmail: "请填写正确的邮箱。",
   pageTitle: name => `${name} 价格排行 · Subdeals`,
   homeTitle: "Subdeals · 电脑硬件好价，按型号排好",
-  categories: { laptop:"游戏本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
+  categories: { apple:"苹果", laptop:"游戏本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
   conditions: { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" },
 } };
 const T = I18N[LANG];
@@ -430,6 +432,8 @@ function suggestions(raw) {
   const p = parseQuery(raw);
   const hasParts = p.category || p.gpu || p.capacity;
   const typing = new Set(HOME.synonyms.filter(x => x.term.startsWith(n)).map(x => x.category));   // 品类词打到一半，比如"笔记"
+  const apple = appleMatch(raw);
+  if (apple) return (apple.exact ? [apple.exact, ...apple.tags.filter(t => t !== apple.exact)] : apple.tags).slice(0, 6);
   const scored = [];
   for (const t of HOME.tags) {
     const texts = [t.name, t.name_en, t.slug, ...(t.aliases || [])].map(norm);
@@ -494,12 +498,58 @@ function mountSearch(el, missEl) {
   return input;
 }
 
+// ---------- 苹果：按产品线 + 尺寸 + 芯片找标签（都在浏览器里完成） ----------
+const APPLE_FAMILIES = [   // [标签 key 的开头, 怎么认出这个产品线]，从上往下认，先认到的为准
+  [["mbp"], /macbook\s*pro|\bmbp/], [["mba"], /macbook\s*air|\bmba/], [["macbook-neo"], /macbook\s*neo/],
+  [["mbp", "mba", "macbook-neo"], /macbook/], [["imac"], /\bimac/], [["macmini"], /mac\s*mini/], [["macstudio"], /mac\s*studio/],
+  [["macpro"], /\bmac\s*pro/], [["ipadpro"], /ipad\s*pro/], [["ipadair"], /ipad\s*air/], [["ipadmini"], /ipad\s*mini/],
+  [["ipad-", "ipadpro", "ipadair", "ipadmini"], /ipad/], [["iphone-"], /iphone/], [["watch-"], /apple\s*watch|\bwatch/], [["airpods-"], /airpods/],
+];
+const APPLE_FILLERS = new Set(["apple", "苹果", "series", "系列", "laptop", "笔记本", "chip", "芯片", "new", "新款", "款", "的", "unlocked", "inch", "in", "gen", "generation", "2024", "2025", "2026"]);
+function appleTokens(text) {
+  const s = String(text || "").normalize("NFKC").toLowerCase()
+    .replace(/(mbp|mba|iphone|airpods|ultra|series|se)(\d)/g, "$1 $2").replace(/(m\d)(pro|max|ultra)/g, "$1 $2")
+    .replace(/(\d)(pro|max|plus)/g, "$1 $2").replace(/寸|吋|英寸|"|”/g, " ");
+  return s.split(/[^a-z0-9.\u4e00-\u9fff]+/).filter(w => w && !APPLE_FILLERS.has(w) && !/^\d+(gb|tb|g|t)$/.test(w));
+}
+// 返回 { family: 认到的产品线, tags: 对得上的苹果标签, exact: 唯一确定的标签 }；不是苹果产品返回 null
+function appleMatch(raw) {
+  const q = String(raw || "").normalize("NFKC").toLowerCase();
+  const fam = APPLE_FAMILIES.find(([, re]) => re.test(q));
+  if (!fam) return null;
+  const want = appleTokens(q.replace(fam[1], " "));
+  const all = HOME.tags.filter(t => t.apple_model && fam[0].some(p => t.apple_model.startsWith(p)));
+  let tags = all.filter(t => { const have = new Set(appleTokens([t.name, ...(t.aliases || [])].join(" "))); return want.every(w => have.has(w)); });
+  // 没写 OLED 时，认定型号只在非 OLED 款里找；列表里 OLED 款照样列出来
+  const pick = !want.includes("oled") && tags.some(t => !t.apple_model.endsWith("-oled")) ? tags.filter(t => !t.apple_model.endsWith("-oled")) : tags;
+  const nameTokens = t => appleTokens(t.name.toLowerCase().replace(fam[1], " "));
+  const exact = pick.length === 1 ? pick[0] : pick.find(t => { const n = nameTokens(t); return n.length === want.length && n.every(w => want.includes(w)); });
+  // 排序：新芯片在前，同一代按尺寸从小到大，OLED 在后；没有 M 芯片的（Intel、iPhone 等）按名字排在后面
+  const order = t => { const m = t.apple_model.match(/^([a-z-]+?)(\d*)-m(\d)(-oled)?$/); return m ? [0, -Number(m[3]), Number(m[2] || 0), m[4] ? 1 : 0] : [1, t.name, 0, 0]; };
+  const cmp = (a, b) => { const x = order(a), y = order(b); for (let i = 0; i < 4; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1; return 0; };
+  return { tags: tags.sort(cmp), all: all.sort(cmp), exact: want.length || pick.length === 1 ? exact : null };
+}
+// 苹果型号没确定时：列出这个产品线的型号让人点
+function showAppleChooser(raw, a, missEl) {
+  const list = a.tags.length ? a.tags : a.all;
+  missEl.innerHTML = `<p><strong>${esc(a.tags.length ? T.appleChoose : T.appleNone(raw))}</strong></p>
+    <ul class="chips">${list.map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("")}</ul>`;
+  missEl.hidden = false;
+}
+
 async function search(raw, missEl) {
   await homeReady;                                   // 等标签和同义词加载完
   const n = norm(raw);
   // 第 1 层：和某个标签的名字或别名完全一样
   const exact = HOME.tags.find(t => [t.name, t.name_en, ...(t.aliases || [])].map(norm).includes(n));
   if (exact) return openTag(exact.slug, raw);
+  // 苹果产品：按型号找，找不准就让人选，不新建标签
+  const apple = appleMatch(raw);
+  if (apple) {
+    if (apple.exact) return openTag(apple.exact.slug, raw);
+    rpc("public_log_miss", { p_query: n, p_visitor: visitorId() }).catch(() => {});
+    return showAppleChooser(raw, apple, missEl);
+  }
   // 第 2 层：规则拆解
   const p = parseQuery(raw);
   if (p.ok) {
@@ -559,6 +609,7 @@ function route() {
 // 没有商品图时，按品类显示一个小图标
 const ICONS = {
   laptop: '<rect x="12" y="14" width="40" height="26" rx="3"/><path d="M6 46h52l-4 6H10z"/>',
+  apple: '<rect x="12" y="14" width="40" height="26" rx="3"/><path d="M6 46h52l-4 6H10z"/>',
   desktop: '<rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="22" r="5"/><path d="M26 44h12"/>',
   graphics_card: '<rect x="6" y="18" width="52" height="28" rx="4"/><circle cx="22" cy="32" r="8"/><circle cx="42" cy="32" r="8"/>',
   ssd: '<rect x="8" y="22" width="48" height="20" rx="3"/><path d="M16 32h14M44 30v4"/>',
@@ -684,6 +735,9 @@ async function showTag(slug, query) {
   catch (e) { if (mine === tagRequest) body.innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`; return; }
   if (mine !== tagRequest) return;
   if (!data) {
+    await homeReady;
+    const apple = appleMatch(slug.replace(/-/g, " "));     // 旧的苹果标签链接（比如 ?t=macbook-pro）：列出型号让人选
+    if (apple) { body.innerHTML = `<div class="miss"></div>`; return showAppleChooser(slug.replace(/-/g, " "), apple, body.firstChild); }
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="./" data-home>${esc(T.backHome)}</a></div>`;
     return;
   }

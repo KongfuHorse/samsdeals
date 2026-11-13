@@ -28,7 +28,7 @@ create table if not exists tags (
 alter table tags drop constraint if exists tags_merged_into_fkey;
 alter table tags add constraint tags_merged_into_fkey foreign key (merged_into) references tags(id) on delete cascade;
 create unique index if not exists tags_structured_uniq on tags
-  ((conditions->>'category'), coalesce(conditions->>'gpu', ''), coalesce(conditions->>'capacity_tb', ''))
+  ((conditions->>'category'), coalesce(conditions->>'gpu', ''), coalesce(conditions->>'capacity_tb', ''), coalesce(conditions->>'apple_model', ''))
   where kind = 'structured' and merged_into is null;
 
 create table if not exists tag_synonyms (       -- 同义词：用户输入的词 → 品类
@@ -94,10 +94,10 @@ create or replace function _cat_label(p_category text, p_lang text)
 returns text language sql immutable as $$
   select case p_lang when 'en' then
     case p_category when 'laptop' then 'Gaming Laptop' when 'desktop' then 'Desktop' when 'graphics_card' then 'Graphics Card'
-                    when 'ssd' then 'SSD' when 'hdd' then 'HDD' else p_category end
+                    when 'ssd' then 'SSD' when 'hdd' then 'HDD' when 'apple' then 'Apple' else p_category end
   else
     case p_category when 'laptop' then '游戏本' when 'desktop' then '台式机' when 'graphics_card' then '显卡'
-                    when 'ssd' then '固态硬盘' when 'hdd' then '机械硬盘' else p_category end
+                    when 'ssd' then '固态硬盘' when 'hdd' then '机械硬盘' when 'apple' then '苹果' else p_category end
   end;
 $$;
 
@@ -125,6 +125,7 @@ begin
   if not exists (select 1 from field_options where field = 'category' and value = p_category and active) then
     raise exception '不支持的品类';
   end if;
+  if p_category = 'apple' then raise exception '苹果标签按型号分，请在后台新建'; end if;
   if p_category in ('laptop', 'desktop', 'graphics_card') then
     v_cap := null;
     if v_gpu is not null and not exists (select 1 from field_options where field = 'gpu' and value = v_gpu and active) then
@@ -179,14 +180,16 @@ returns jsonb language sql stable security definer set search_path = public as $
   select jsonb_build_object(
     'tags', (select coalesce(jsonb_agg(jsonb_build_object('slug', t.slug, 'name', t.name_zh, 'name_en', t.name_en,
                       'aliases', t.aliases, 'kind', t.kind, 'heat', t.visitors, 'deals', t.n,
-                      'category', t.conditions->>'category', 'gpu', t.conditions->>'gpu', 'capacity_tb', t.conditions->'capacity_tb')
+                      'category', t.conditions->>'category', 'gpu', t.conditions->>'gpu', 'capacity_tb', t.conditions->'capacity_tb',
+                      'apple_model', t.conditions->>'apple_model')
                     order by t.visitors desc, t.n desc, t.id), '[]')
              from (select x.*, (select count(*) from deals d
                                 where x.kind = 'structured' and d.created_at > now() - interval '30 days'
                                   and d.status in ('passed', 'not_passed', 'no_rule')
                                   and d.category = x.conditions->>'category'
                                   and (x.conditions->>'gpu' is null or d.gpu = x.conditions->>'gpu')
-                                  and (x.conditions->>'capacity_tb' is null or d.capacity_tb = (x.conditions->>'capacity_tb')::numeric)) n
+                                  and (x.conditions->>'capacity_tb' is null or d.capacity_tb = (x.conditions->>'capacity_tb')::numeric)
+                                  and (x.conditions->>'apple_model' is null or d.apple_model = x.conditions->>'apple_model')) n
                    from _tags_with_stats() x where x.is_public) t),
     'synonyms', (select coalesce(jsonb_agg(jsonb_build_object('term', term, 'category', category)), '[]') from tag_synonyms),
     'gpus', (select coalesce(jsonb_agg(value order by sort_order), '[]') from field_options where field = 'gpu' and active)
@@ -237,6 +240,7 @@ begin
         and d.category = t.conditions->>'category'
         and (t.conditions->>'gpu' is null or d.gpu = t.conditions->>'gpu')
         and (t.conditions->>'capacity_tb' is null or d.capacity_tb = (t.conditions->>'capacity_tb')::numeric)
+        and (t.conditions->>'apple_model' is null or d.apple_model = t.conditions->>'apple_model')
       order by sort_key nulls last limit 300) x;
   else
     v_storage := false;
@@ -367,7 +371,7 @@ begin
                        'tag', t.name_zh, 'created_at', s.created_at, 'last_hit_at', s.last_hit_at) order by s.created_at desc), '[]')
                      from sources s left join tags t on t.id = s.tag_id where s.auto),
     'options', (select coalesce(jsonb_agg(jsonb_build_object('field', field, 'value', value, 'label', label) order by field, sort_order), '[]')
-                from field_options where active and field in ('category', 'gpu'))
+                from field_options where active and field in ('category', 'gpu', 'apple_model'))
   );
 end $$;
 
@@ -377,6 +381,7 @@ returns bigint language plpgsql security definer set search_path = public as $$
 declare v_id bigint := nullif(p_tag->>'id', '')::bigint; v_created boolean; v_kind text := coalesce(nullif(p_tag->>'kind', ''), 'structured');
         v_aliases text[]; v_kw text[]; v_cond jsonb; v_slug text; v_name text := trim(p_tag->>'name_zh');
         v_cat text := p_tag->>'category'; v_gpu text := nullif(trim(p_tag->>'gpu'), ''); v_cap numeric := trim_scale(nullif(p_tag->>'capacity_tb', '')::numeric);
+        v_apple text := nullif(trim(p_tag->>'apple_model'), '');
 begin
   perform _admin_check(p_token);
   select coalesce(array_agg(distinct trim(a)), '{}') into v_aliases
@@ -397,6 +402,24 @@ begin
       returning id into v_id;
       return v_id;
     end if;
+  elsif v_cat = 'apple' then
+    -- 苹果：按型号（apple_model）分标签
+    if v_apple is null or not exists (select 1 from field_options where field = 'apple_model' and value = v_apple) then
+      raise exception '请选择苹果型号';
+    end if;
+    if exists (select 1 from tags where id is distinct from v_id and kind = 'structured' and merged_into is null
+                 and conditions->>'category' = 'apple' and conditions->>'apple_model' = v_apple) then
+      raise exception '这个苹果型号已经有标签了';
+    end if;
+    v_cond := jsonb_build_object('category', 'apple', 'apple_model', v_apple);
+    if v_id is null then
+      if coalesce(v_name, '') = '' then raise exception '请填写标签名'; end if;
+      insert into tags (slug, name_zh, name_en, aliases, kind, conditions, in_scope, created_by, approved)
+      values (case when exists (select 1 from tags where slug = v_apple) then v_apple || '-' || floor(random() * 1000)::text else v_apple end,
+              v_name, nullif(trim(p_tag->>'name_en'), ''), v_aliases, 'structured', v_cond, true, 'admin', coalesce((p_tag->>'approved')::boolean, true))
+      returning id into v_id;
+      return v_id;
+    end if;
   else
     if v_id is null then
       select o_id, o_created into v_id, v_created from _tag_resolve_structured(v_cat, v_gpu, v_cap, 'admin', true);
@@ -405,7 +428,8 @@ begin
       if v_cat in ('laptop', 'desktop', 'graphics_card') then v_cap := null; else v_gpu := null; end if;
       if exists (select 1 from tags where id <> v_id and kind = 'structured' and merged_into is null
                    and conditions->>'category' = v_cat and coalesce(conditions->>'gpu', '') = coalesce(v_gpu, '')
-                   and coalesce(conditions->>'capacity_tb', '') = coalesce(v_cap::text, '')) then
+                   and coalesce(conditions->>'capacity_tb', '') = coalesce(v_cap::text, '')
+                   and conditions->>'apple_model' is null) then
         raise exception '已经有条件相同的标签了，可以用"合并"';
       end if;
       if not exists (select 1 from field_options where field = 'category' and value = v_cat and active) then raise exception '不支持的品类'; end if;

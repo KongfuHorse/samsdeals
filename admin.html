@@ -203,8 +203,9 @@
         <div class="row" style="margin-bottom:6px">
           <label class="small">类型<br><select id="tgKind"><option value="structured">按品类和型号</option><option value="keyword">按标题关键词</option></select></label>
           <label class="small tg-s">品类<br><select id="tgCat"></select></label>
-          <label class="small tg-s">显卡<br><select id="tgGpu"></select></label>
-          <label class="small tg-s">容量 TB<br><input id="tgCap" type="number" min="0" step="0.5" style="width:90px" placeholder="不限"></label>
+          <label class="small tg-s tg-pc">显卡<br><select id="tgGpu"></select></label>
+          <label class="small tg-s tg-pc">容量 TB<br><input id="tgCap" type="number" min="0" step="0.5" style="width:90px" placeholder="不限"></label>
+          <label class="small tg-s tg-apple">苹果型号<br><select id="tgApple"></select></label>
           <label class="small tg-k" style="flex:1 1 220px">关键词（标题里都要包含，用英文逗号隔开）<br><input id="tgKw" style="width:100%" placeholder="macbook air, m4"></label>
         </div>
         <div class="row">
@@ -683,6 +684,7 @@ let tgEditing = null, tgMerging = null;
 function tagCond(t) {
   if (t.kind === "keyword") return "标题包含：" + (t.conditions.keywords || []).join(" + ");
   const c = t.conditions;
+  if (c.apple_model) return "苹果，型号：" + ((tagData.options.find(o => o.field === "apple_model" && o.value === c.apple_model) || {}).label || c.apple_model);
   return [CAT_NAMES[c.category] || c.category, c.gpu, c.capacity_tb != null ? c.capacity_tb + "TB" : ""].filter(Boolean).join("，");
 }
 function renderTags() {
@@ -691,6 +693,7 @@ function renderTags() {
   const catOpts = cats.map(o => `<option value="${esc(o.value)}">${esc(o.label || o.value)}</option>`).join("");
   $("tgCat").innerHTML = catOpts; $("synCat").innerHTML = catOpts;
   $("tgGpu").innerHTML = `<option value="">不限</option>` + gpus.map(o => `<option value="${esc(o.value)}">${esc(o.value)}</option>`).join("");
+  $("tgApple").innerHTML = tagData.options.filter(o => o.field === "apple_model").map(o => `<option value="${esc(o.value)}">${esc(o.label || o.value)}</option>`).join("");
   const live = tagData.tags.filter(t => !t.merged_into);
   const waiting = live.filter(t => !t.approved).length;
   $("tagCount").textContent = waiting; $("tagCount").classList.toggle("hidden", !waiting);
@@ -733,8 +736,12 @@ function renderTags() {
   $("missBody").innerHTML = tagData.misses.map(x => `<tr><td>${esc(x.query)}</td><td>${x.searches}</td><td class="small muted">${ago(x.last_at)}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">没有</td></tr>`;
 }
 function tgFormMode() {
-  const kw = $("tgKind").value === "keyword";
+  const kw = $("tgKind").value === "keyword", apple = $("tgCat").value === "apple";
   document.querySelectorAll(".tg-s").forEach(e => e.classList.toggle("hidden", kw));
+  if (!kw) {
+    document.querySelectorAll(".tg-pc").forEach(e => e.classList.toggle("hidden", apple));
+    document.querySelectorAll(".tg-apple").forEach(e => e.classList.toggle("hidden", !apple));
+  }
   document.querySelectorAll(".tg-k").forEach(e => e.classList.toggle("hidden", !kw));
 }
 function tgOpenForm(t) {
@@ -747,6 +754,7 @@ function tgOpenForm(t) {
   $("tgCat").value = t && t.conditions.category ? t.conditions.category : $("tgCat").options[0]?.value;
   $("tgGpu").value = t && t.conditions.gpu ? t.conditions.gpu : "";
   $("tgCap").value = t && t.conditions.capacity_tb != null ? t.conditions.capacity_tb : "";
+  if (t && t.conditions.apple_model) $("tgApple").value = t.conditions.apple_model;
   $("tgKw").value = t && t.conditions.keywords ? t.conditions.keywords.join(", ") : "";
   $("tgApproved").checked = t ? t.approved : true;
   tgFormMode(); $("tgForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -754,12 +762,13 @@ function tgOpenForm(t) {
 function tgCloseForm() { tgEditing = null; $("tgForm").classList.add("hidden"); $("tgHeading").textContent = "标签"; }
 const splitList = v => v.split(/[,，]/).map(x => x.trim()).filter(Boolean);
 $("tgKind").addEventListener("change", tgFormMode);
+$("tgCat").addEventListener("change", tgFormMode);
 $("tgNew").addEventListener("click", () => tgOpenForm(null));
 $("tgCancel").addEventListener("click", tgCloseForm);
 $("tgSave").addEventListener("click", async () => {
   const tag = { id: tgEditing, kind: $("tgKind").value, name_zh: $("tgName").value.trim(), name_en: $("tgNameEn").value.trim(),
                 aliases: splitList($("tgAliases").value), category: $("tgCat").value, gpu: $("tgGpu").value,
-                capacity_tb: $("tgCap").value, keywords: splitList($("tgKw").value), approved: $("tgApproved").checked };
+                capacity_tb: $("tgCap").value, apple_model: $("tgCat").value === "apple" ? $("tgApple").value : "", keywords: splitList($("tgKw").value), approved: $("tgApproved").checked };
   try { await rpc("admin_tag_save", { p_token: token, p_tag: tag }); toast("已保存"); tgCloseForm(); await reload(); }
   catch (e) { toast("保存失败：" + e.message, true); }
 });
