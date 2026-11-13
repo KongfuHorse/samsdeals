@@ -41,6 +41,9 @@
   .logo span { font-weight:500; }
   .top .spacer { flex:1; }
   .top .search { flex:1 1 360px; max-width:620px; }
+  .lang { display:flex; align-items:center; gap:6px; font-size:14px; color:var(--faint); white-space:nowrap; }
+  .lang a { font-weight:600; } .lang a:hover { color:var(--accent); }
+  .lang a[aria-current] { color:var(--ink); }
   .pill { display:inline-flex; align-items:center; min-height:44px; padding:0 22px; border-radius:999px; background:var(--btn); color:#fff; font-weight:700; font-size:15px; border:0; cursor:pointer; white-space:nowrap; }
 
   /* 搜索框 */
@@ -68,7 +71,7 @@
   .hero { display:flex; flex-wrap:wrap; align-items:center; gap:48px; padding:64px 0 56px; }
   .hero-text { flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:24px; }
   .hero h1 { margin:0; font:700 54px/1.2 var(--serif); letter-spacing:-.01em; }
-  .hero h1 mark { background:var(--hl); color:var(--accent); padding:0 8px; }
+  .hero h1 mark { background:var(--hl); color:var(--accent); padding:0 8px; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
   .hero p { margin:0; font-size:18px; line-height:1.7; color:var(--muted); max-width:520px; }
   .hero .search { max-width:560px; }
   .collage { flex:1 1 400px; min-width:0; position:relative; height:440px; }
@@ -168,6 +171,7 @@
     .top .wrap { gap:10px 14px; padding-top:10px; padding-bottom:10px; }
     .logo { font-size:23px; }
     .top .pill { min-height:40px; padding:0 16px; font-size:14px; }
+    #viewTag .top .lang { margin-left:auto; }
     #viewTag .top .search { flex-basis:100%; order:3; }
     .hero { padding:32px 0 28px; gap:22px; }
     .hero-text { gap:18px; }
@@ -216,6 +220,7 @@
       <a class="logo" href="./" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
       <span class="spacer"></span>
       <button class="pill" type="button" id="subHint"></button>
+      <nav class="lang"></nav>
     </div></header>
     <div class="wrap">
       <section class="hero">
@@ -241,6 +246,7 @@
     <header class="top"><div class="wrap">
       <a class="logo" href="./" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
       <div class="search" id="searchTag"></div>
+      <nav class="lang"></nav>
     </div></header>
     <div class="wrap">
       <div class="miss" id="missTag" hidden></div>
@@ -248,7 +254,7 @@
     </div>
   </div>
 
-  <footer><div class="wrap"><span id="status">&nbsp;</span><span class="links"><a href="privacy.html">隐私政策</a><a href="mailto:hello@subdeals.net">hello@subdeals.net</a></span></div></footer>
+  <footer><div class="wrap"><span id="status">&nbsp;</span><span class="links"><a href="privacy.html" id="privacyLink">隐私政策</a><a href="mailto:hello@subdeals.net">hello@subdeals.net</a></span></div></footer>
 
 <script>
 // ===== 设置（只改这里）=====
@@ -256,10 +262,21 @@ const SUPABASE_URL = "https://pmjmexfueofdaubcumgk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_l02lU8RFOe5RwSkO-YasHw_MBTgd-av";   // 公开 key，可以放在网页里
 const FEATURED_DAYS = 14;      // 首页精选推荐显示最近几天的
 const HOT_TAGS = 10;           // 首页显示几个热门标签
-const LANG = "zh";             // 界面语言（第三阶段加 en）
 // ==========================
 
-// 所有界面文字都放在这里，以后加英文只需要加一个 en
+// 界面语言：网址里的 ?lang= 优先，然后是上次选的，最后看浏览器语言（中文显示中文，其他都显示英文）
+const PARAMS = new URLSearchParams(location.search);
+function pickLang() {
+  const q = PARAMS.get("lang");
+  if (q === "zh" || q === "en") { try { localStorage.setItem("sd_lang", q); } catch (e) {} return q; }
+  try { const s = localStorage.getItem("sd_lang"); if (s === "zh" || s === "en") return s; } catch (e) {}
+  const prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+  return prefs.some(l => /^zh\b/i.test(l)) ? "zh" : "en";
+}
+const LANG = pickLang();
+const LANG_Q = PARAMS.has("lang") ? `lang=${LANG}` : "";      // 网址里带了语言的（比如英文邮件里的链接），换页时继续带着
+
+// 所有界面文字都放在这里
 const I18N = { zh: {
   placeholder: "比如 5090 游戏本、4TB 固态",
   searchBtn: "搜索",
@@ -328,10 +345,83 @@ const I18N = { zh: {
   subBadEmail: "请填写正确的邮箱。",
   pageTitle: name => `${name} 价格排行 · Subdeals`,
   homeTitle: "Subdeals · 电脑硬件好价，按型号排好",
+  metaDesc: "搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。",
   categories: { apple:"苹果", laptop:"游戏本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
   conditions: { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" },
+}, en: {
+  placeholder: "e.g. 5090 laptop, 4TB SSD",
+  searchBtn: "Search",
+  heroTitle: ["Search a model.", "See the lowest price in 30 days."],
+  heroText: "We sort PC hardware deals from Slickdeals, Reddit and Woot by model, and rank them from lowest to highest price.",
+  hotLead: "Popular searches",
+  subHint: "Get price alerts",
+  subHintMsg: "Search a model first, then subscribe on its page",
+  factsTags: n => `<b>${n}</b> model tags`,
+  factsCheck: s => `Last checked: <b>${s}</b>`,
+  factsSources: "Sources: Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar",
+  featured: "Today's picks",
+  featuredNote: "Only deals that meet our price bar",
+  topOf: name => `${name} · #1`,
+  lowestOf: name => `${name} · Lowest`,
+  sortPerTb: "Sorted by price per TB",
+  sortTotal: "Sorted by total price",
+  total: p => `${p} total`,
+  perTbShort: p => `${p}/TB`,
+  featuredEmpty: "No picks right now",
+  featuredEmptyHint: "Search above for what you want and see recent prices.",
+  loading: "Loading…",
+  loadError: "Can't load data right now",
+  loadErrorHint: "Please refresh the page in a moment.",
+  pinned: "Pinned",
+  from: s => `From ${s}`,
+  pack: n => `${n}-pack`,
+  perTb: p => `${p} per TB`,
+  justNow: "just now", minAgo: n => `${n} min ago`, hourAgo: n => `${n} hr ago`, dayAgo: n => `${n} day${n > 1 ? "s" : ""} ago`,
+  found: s => `Found ${s}`,
+  priceNote: "Subdeals · Prices may change. Check the store page.",
+  dealsCount: n => `${n} price${n > 1 ? "s" : ""}`,
+  missTitle: q => `No tag for "${q}" yet`,
+  missRelated: "Did you mean:",
+  createBtn: q => `Create tag "${q}"`,
+  createHint: "Once it's created, we'll start collecting prices for it.",
+  creating: "Creating…",
+  errLimited: "Too many new tags today. Please try again tomorrow.",
+  errNotProduct: "We can't tell what product this is. Try adding the brand and model.",
+  errServer: "Couldn't create the tag. Please try again later.",
+  rankTotal: n => n === 1 ? "1 price from the last 30 days." : `${n} prices from the last 30 days, sorted from lowest to highest.`,
+  rankPerTb: n => n === 1 ? "1 price from the last 30 days." : `${n} prices from the last 30 days, sorted by price per TB from lowest to highest.`,
+  rankKeyword: n => `${n === 1 ? "1 possibly related price" : `${n} possibly related prices`} from the last 30 days, sorted from lowest to highest. We just started tracking this, so the list may be incomplete.`,
+  tagEmpty: "No prices yet",
+  tagEmptyNew: "This tag is new and we've started collecting prices. You can subscribe now and check back later.",
+  tagEmptyOld: "We haven't found prices for this in the last 30 days. You can subscribe now and check back when new prices show up.",
+  tagNotFound: "Tag not found",
+  tagNotFoundHint: "Go back to the home page and search again.",
+  backHome: "Back to home",
+  subTitle: "Get an email when a good new price shows up",
+  subEmail: "Your email",
+  subFreq: "How often",
+  subInstant: "Instant",
+  subDaily: "Daily digest",
+  subBtn: "Subscribe",
+  subSoon: "Subscriptions open soon. We won't save your email for now. Please come back and subscribe then.",
+  appleChoose: "Pick a model:",
+  appleNone: q => `No model matches "${q}". Try one of these:`,
+  subSending: "Sending…",
+  subSent: e => `We sent a confirmation email to ${e}. Click the link inside to finish subscribing. If you don't see it, check your spam folder.`,
+  subLimited: "Too many tries. Please try again tomorrow.",
+  subQuota: "We've sent too many emails today. Please try again tomorrow.",
+  subFailed: "Couldn't subscribe. Please try again later.",
+  subPrivacy: ["By subscribing, you agree to our ", "Privacy Policy", ". Every email has a one-click unsubscribe link."],
+  privacy: "Privacy Policy",
+  subBadEmail: "Please enter a valid email.",
+  pageTitle: name => `${name} Prices · Subdeals`,
+  homeTitle: "Subdeals · PC hardware deals, ranked by model",
+  metaDesc: "Search the PC hardware you care about and see recent prices ranked: gaming laptops, graphics cards, desktops, SSDs and hard drives.",
+  categories: { apple:"Apple", laptop:"Gaming Laptop", desktop:"Desktop", graphics_card:"Graphics Card", ssd:"SSD", hdd:"HDD" },
+  conditions: { new:"New", open_box:"Open box", refurb:"Refurbished", used:"Used" },
 } };
 const T = I18N[LANG];
+const PRIVACY_URL = "privacy.html" + (LANG_Q ? "?" + LANG_Q : "");
 const SRC = { slickdeals:"Slickdeals", reddit:"Reddit", tomshardware:"Tom's Hardware", techradar:"TechRadar", woot:"Woot" };
 const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
   ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
@@ -533,7 +623,7 @@ function appleMatch(raw) {
 function showAppleChooser(raw, a, missEl) {
   const list = a.tags.length ? a.tags : a.all;
   missEl.innerHTML = `<p><strong>${esc(a.tags.length ? T.appleChoose : T.appleNone(raw))}</strong></p>
-    <ul class="chips">${list.map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("")}</ul>`;
+    <ul class="chips">${list.map(t => `<li><a href="${tagHref(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("")}</ul>`;
   missEl.hidden = false;
 }
 
@@ -569,7 +659,7 @@ async function search(raw, missEl) {
 function showMiss(raw, missEl, errorText) {
   const related = suggestions(raw);
   missEl.innerHTML = `<p><strong>${esc(T.missTitle(raw))}</strong></p>
-    ${related.length ? `<p>${esc(T.missRelated)}</p><ul class="chips">${related.map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("")}</ul>` : ""}
+    ${related.length ? `<p>${esc(T.missRelated)}</p><ul class="chips">${related.map(t => `<li><a href="${tagHref(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("")}</ul>` : ""}
     <button class="primary" type="button">${esc(T.createBtn(raw))}</button>
     <p class="hint" role="status">${esc(errorText || T.createHint)}</p>`;
   missEl.hidden = false;
@@ -594,11 +684,13 @@ document.addEventListener("click", e => {
 });
 
 // ---------- 页面切换 ----------
+const withLang = q => [q, LANG_Q].filter(Boolean).join("&");
+const tagHref = slug => "?" + withLang("t=" + encodeURIComponent(slug));
 function openTag(slug, query) {
-  history.pushState({}, "", "?t=" + encodeURIComponent(slug));
+  history.pushState({}, "", tagHref(slug));
   showTag(slug, query);
 }
-function goHome() { history.pushState({}, "", location.pathname); showHome(); }
+function goHome() { history.pushState({}, "", location.pathname + (LANG_Q ? "?" + LANG_Q : "")); showHome(); }
 window.addEventListener("popstate", route);
 function route() {
   const slug = new URLSearchParams(location.search).get("t");
@@ -674,6 +766,7 @@ function dedupe(list) {
 let featuredLoaded = false;
 async function showHome() {
   $("viewTag").hidden = true; $("viewHome").hidden = false; $("missHome").hidden = true;
+  drawLang();
   document.title = T.homeTitle;
   homeInput.value = "";
   if (featuredLoaded) return;
@@ -719,7 +812,7 @@ function renderCollage(rows) {
 function renderHotTags() {
   const tags = HOME.tags.filter(t => t.deals > 0 || t.heat > 0).slice(0, HOT_TAGS);
   $("hotTags").innerHTML = (tags.length ? `<li class="lead">${esc(T.hotLead)}</li>` : "")
-    + tags.map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("");
+    + tags.map(t => `<li><a href="${tagHref(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("");
   renderFacts();
 }
 
@@ -727,6 +820,7 @@ function renderHotTags() {
 let tagRequest = 0;
 async function showTag(slug, query) {
   $("viewHome").hidden = true; $("viewTag").hidden = false; $("missTag").hidden = true;
+  drawLang();
   window.scrollTo(0, 0);
   const body = $("tagBody"), mine = ++tagRequest;
   body.innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
@@ -742,7 +836,7 @@ async function showTag(slug, query) {
     return;
   }
   const tag = data.tag, name = tagName(tag), deals = dedupe(data.deals);
-  if (tag.slug !== slug) history.replaceState({}, "", "?t=" + encodeURIComponent(tag.slug));   // 被合并的旧网址跳到新标签
+  if (tag.slug !== slug) { history.replaceState({}, "", tagHref(tag.slug)); drawLang(); }   // 被合并的旧网址跳到新标签
   document.title = T.pageTitle(name);
   tagInput.value = name;
   const intro = !deals.length ? "" : tag.kind === "keyword" ? T.rankKeyword(deals.length) : tag.per_tb ? T.rankPerTb(deals.length) : T.rankTotal(deals.length);
@@ -759,7 +853,7 @@ async function showTag(slug, query) {
       </fieldset>
       <button class="dark" type="submit">${esc(T.subBtn)}</button>
       <p class="msg" role="status" hidden></p>
-      <p class="fine">${esc(T.subPrivacy[0])}<a href="privacy.html">${esc(T.subPrivacy[1])}</a>${esc(T.subPrivacy[2])}</p>
+      <p class="fine">${esc(T.subPrivacy[0])}<a href="${PRIVACY_URL}">${esc(T.subPrivacy[1])}</a>${esc(T.subPrivacy[2])}</p>
     </form>
     ${deals.length
       ? `<div class="rank-list">${deals.map((d, i) => rowHtml(d, i, { showCategory: tag.kind === "keyword" })).join("")}</div>`
@@ -768,7 +862,7 @@ async function showTag(slug, query) {
   $("subForm").addEventListener("submit", async e => {
     e.preventDefault();
     const f = e.target, msg = f.querySelector(".msg"), btn = f.querySelector("button[type=submit]");
-    const sub = { email: f.email.value.trim(), tag: tag.slug, frequency: f.frequency.value };
+    const sub = { email: f.email.value.trim(), tag: tag.slug, frequency: f.frequency.value, lang: LANG };
     msg.hidden = false;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(sub.email)) { msg.textContent = T.subBadEmail; return; }
     btn.disabled = true; msg.textContent = T.subSending;
@@ -783,6 +877,22 @@ async function showTag(slug, query) {
 }
 
 // ---------- 启动 ----------
+// 右上角切换语言：链接带上 ?lang=，打开后记住这个选择
+function drawLang() {
+  const q = new URLSearchParams(location.search);
+  q.delete("lang");
+  const html = [["zh", "中文"], ["en", "EN"]].map(([l, n]) => {
+    const u = new URLSearchParams(q); u.set("lang", l);
+    return `<a href="?${esc(u.toString())}" lang="${l === "zh" ? "zh-CN" : "en"}"${l === LANG ? ' aria-current="true"' : ""}>${n}</a>`;
+  }).join("<span>/</span>");
+  document.querySelectorAll(".lang").forEach(el => { el.innerHTML = html; });
+}
+document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+document.querySelector('meta[name="description"]').content = T.metaDesc;
+$("privacyLink").textContent = T.privacy;
+$("privacyLink").href = PRIVACY_URL;
+document.querySelectorAll("a[data-home]").forEach(a => { a.href = "./" + (LANG_Q ? "?" + LANG_Q : ""); });
+drawLang();
 $("heroTitle").innerHTML = `${esc(T.heroTitle[0])}<br><mark>${esc(T.heroTitle[1])}</mark>`;
 $("heroText").textContent = T.heroText;
 $("subHint").textContent = T.subHint;

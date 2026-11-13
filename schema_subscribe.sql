@@ -16,6 +16,7 @@ create table if not exists subscribers (
   created_at timestamptz not null default now(),
   confirmed_at timestamptz
 );
+alter table subscribers add column if not exists lang text not null default 'zh';   -- 邮件语言：zh / en，按订阅时的网页语言
 
 create table if not exists subscriptions (
   id bigint generated always as identity primary key,
@@ -93,10 +94,13 @@ $$;
 
 -- ---------- 服务器用（Edge Function 调用） ----------
 -- 订阅请求：检查后返回要发的确认邮件内容
-create or replace function sub_request(p_email text, p_slug text, p_frequency text, p_ip_hash text, p_test boolean default false)
+drop function if exists sub_request(text, text, text, text, boolean);
+create or replace function sub_request(p_email text, p_slug text, p_frequency text, p_ip_hash text, p_test boolean default false,
+                                       p_lang text default 'zh')
 returns jsonb language plpgsql security definer set search_path = public, extensions as $$
 declare
   v_email text := lower(trim(coalesce(p_email, '')));
+  v_lang text := case when p_lang = 'en' then 'en' else 'zh' end;
   t tags%rowtype; s subscribers%rowtype; x subscriptions%rowtype; v_token text; v_has boolean;
 begin
   if not p_test and not (select subscribe_enabled from settings where id = 1) then return jsonb_build_object('error', 'closed'); end if;
@@ -112,7 +116,7 @@ begin
   end if;
   insert into sub_ip_log (ip_hash) values (p_ip_hash);
 
-  insert into subscribers (email, ip_hash) values (v_email, p_ip_hash) on conflict (email) do nothing;
+  insert into subscribers (email, ip_hash, lang) values (v_email, p_ip_hash, v_lang) on conflict (email) do nothing;
   select * into s from subscribers where email = v_email;
   if (select count(*) from email_log where subscriber_id = s.id and kind = 'confirm' and created_at > now() - interval '24 hours') >= 3 then
     return jsonb_build_object('error', 'limited');
@@ -129,6 +133,7 @@ begin
   if _email_quota_left() < 1 then return jsonb_build_object('error', 'quota'); end if;
 
   v_token := encode(gen_random_bytes(16), 'hex');
+  update subscribers set lang = v_lang where id = s.id;               -- 以最近一次订阅时的网页语言为准
   if not v_has then
     insert into subscriptions (subscriber_id, tag_id, frequency, confirm_token) values (s.id, t.id, p_frequency, v_token);
   elsif x.status = 'pending' then
@@ -137,7 +142,7 @@ begin
     update subscriptions set pending_frequency = p_frequency, confirm_token = v_token, requested_at = now() where id = x.id;
   end if;
   return jsonb_build_object('send', jsonb_build_object('email', v_email, 'subscriber_id', s.id, 'confirm', v_token,
-    'tag', t.name_zh, 'slug', t.slug, 'frequency', p_frequency, 'key', s.token));
+    'tag', t.name_zh, 'tag_en', t.name_en, 'slug', t.slug, 'frequency', p_frequency, 'key', s.token, 'lang', v_lang));
 end $$;
 
 create or replace function email_log_add(p_rows jsonb)
@@ -157,6 +162,7 @@ returns jsonb language sql security definer set search_path = public as $$
     'quota', _email_quota(),
     'subs', (select coalesce(jsonb_agg(jsonb_build_object(
         'id', x.id, 'subscriber_id', s.id, 'email', s.email, 'key', s.token, 'tag_id', t.id, 'slug', t.slug, 'tag', t.name_zh,
+        'tag_en', t.name_en, 'lang', s.lang,
         'frequency', x.frequency, 'activated_at', x.activated_at, 'last_digest_at', x.last_digest_at,
         'sent', (select coalesce(jsonb_agg(z.deal_url), '[]') from sub_sent z where z.subscription_id = x.id),
         'instant_today', (select count(*) from email_log l where l.subscriber_id = s.id and l.kind = 'instant' and l.ok
@@ -197,7 +203,7 @@ end $$;
 -- ---------- 网页用（确认、管理订阅；凭邮件里的随机链接） ----------
 create or replace function public_sub_confirm(p_token text)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare x subscriptions%rowtype; v_key text; v_tag text;
+declare x subscriptions%rowtype; v_key text; v_tag text; v_tag_en text;
 begin
   select * into x from subscriptions where confirm_token = p_token and length(coalesce(p_token, '')) = 32;
   if not found then return jsonb_build_object('error', 'invalid'); end if;
@@ -206,14 +212,14 @@ begin
          frequency = coalesce(pending_frequency, frequency), pending_frequency = null, confirm_token = null
   where id = x.id;
   update subscribers set confirmed_at = coalesce(confirmed_at, now()) where id = x.subscriber_id returning token into v_key;
-  select name_zh into v_tag from tags where id = x.tag_id;
-  return jsonb_build_object('key', v_key, 'tag', v_tag);
+  select name_zh, name_en into v_tag, v_tag_en from tags where id = x.tag_id;
+  return jsonb_build_object('key', v_key, 'tag', v_tag, 'tag_en', v_tag_en);
 end $$;
 
 create or replace function public_sub_get(p_key text)
 returns jsonb language sql security definer set search_path = public as $$
   select case when s.id is null then null else jsonb_build_object('email', s.email, 'subs', (
-    select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'tag', t.name_zh, 'slug', t.slug, 'frequency', x.frequency,
+    select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'tag', t.name_zh, 'tag_en', t.name_en, 'slug', t.slug, 'frequency', x.frequency,
                                                  'status', x.status) order by x.requested_at), '[]')
     from subscriptions x join tags t on t.id = x.tag_id where x.subscriber_id = s.id)) end
   from (select 1) one left join subscribers s on s.token = p_key and length(coalesce(p_key, '')) = 32;
@@ -302,10 +308,10 @@ select cron.unschedule(jobid) from cron.job where jobname = 'subdeals-notify';
 select cron.schedule('subdeals-notify', '*/10 * * * *', 'select _notify_tick()');
 
 -- ---------- 权限 ----------
-revoke all on function _email_quota(), _email_quota_left(), sub_request(text, text, text, text, boolean), email_log_add(jsonb),
+revoke all on function _email_quota(), _email_quota_left(), sub_request(text, text, text, text, boolean, text), email_log_add(jsonb),
   notify_prepare(), notify_commit(jsonb, bigint[], date, date), _notify_tick(), _sub_cleanup()
   from public, anon, authenticated;
-grant execute on function sub_request(text, text, text, text, boolean), email_log_add(jsonb), notify_prepare(),
+grant execute on function sub_request(text, text, text, text, boolean, text), email_log_add(jsonb), notify_prepare(),
   notify_commit(jsonb, bigint[], date, date) to service_role;
 grant execute on function public_sub_confirm(text), public_sub_get(text), public_sub_update(text, bigint, text),
   public_sub_remove(text, bigint), public_sub_remove_all(text), admin_sub_get(text),

@@ -30,7 +30,10 @@
   [hidden] { display:none !important; }
   .wrap { max-width:760px; margin:0 auto; padding:0 24px; }
   .top { border-bottom:1px solid var(--line); }
-  .top .wrap { padding-top:16px; padding-bottom:16px; }
+  .top .wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:16px; padding-bottom:16px; }
+  .lang { display:flex; align-items:center; gap:6px; font-size:14px; color:var(--faint); }
+  .lang a { color:var(--faint); text-decoration:none; font-weight:600; } .lang a:hover { color:var(--accent); }
+  .lang a[aria-current] { color:var(--ink); }
   .logo { font-size:26px; letter-spacing:-.03em; line-height:1; color:var(--ink); text-decoration:none; }
   .logo span { font-weight:500; } .logo b { font-weight:800; color:var(--accent); }
   h1 { font:700 40px/1.2 var(--serif); margin:44px 0 10px; }
@@ -67,16 +70,66 @@
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap"><a class="logo" href="./" aria-label="Subdeals 首页"><span>sub</span><b>deals</b></a></div></header>
-<main class="wrap" id="main" aria-live="polite"><h1>管理订阅</h1><p class="lead">正在加载…</p></main>
-<footer><div class="wrap"><span>Subdeals · 价格以商家页面为准</span><span><a href="privacy.html">隐私政策</a> · <a href="mailto:hello@subdeals.net">hello@subdeals.net</a></span></div></footer>
+<header class="top"><div class="wrap"><a class="logo" id="logo" href="./" aria-label="Subdeals"><span>sub</span><b>deals</b></a><nav class="lang" id="lang"></nav></div></header>
+<main class="wrap" id="main" aria-live="polite"><h1>&nbsp;</h1></main>
+<footer><div class="wrap"><span id="note"></span><span><a href="privacy.html" id="privacy"></a> · <a href="mailto:hello@subdeals.net">hello@subdeals.net</a></span></div></footer>
 
 <script>
 const SUPABASE_URL = "https://pmjmexfueofdaubcumgk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_l02lU8RFOe5RwSkO-YasHw_MBTgd-av";   // 公开 key，可以放在网页里
 const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
   ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY } : { apikey: SUPABASE_ANON_KEY };
-const FREQ = { daily: "每天汇总", instant: "马上通知" };
+
+// 语言：网址里的 ?lang= 优先，然后是上次选的，最后看浏览器语言（中文显示中文，其他都显示英文）
+const params = new URLSearchParams(location.search);
+function pickLang() {
+  const q = params.get("lang");
+  if (q === "zh" || q === "en") { try { localStorage.setItem("sd_lang", q); } catch (e) {} return q; }
+  try { const s = localStorage.getItem("sd_lang"); if (s === "zh" || s === "en") return s; } catch (e) {}
+  const prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+  return prefs.some(l => /^zh\b/i.test(l)) ? "zh" : "en";
+}
+const LANG = pickLang();
+const LANG_Q = params.has("lang") ? `lang=${LANG}` : "";      // 网址里带了语言的，换页时继续带着
+const withLang = (q) => [q, LANG_Q].filter(Boolean).join("&");
+const I18N = {
+  zh: {
+    title: "管理订阅", loading: "正在加载…", note: "Subdeals · 价格以商家页面为准", privacy: "隐私政策", home: "回到首页",
+    freq: { daily: "每天汇总", instant: "马上通知" },
+    confirmed: t => `订阅成功：「${t}」。有新的好价，我们会发邮件告诉你。`,
+    confirmFail: "确认没有成功", expired: "这个确认链接已经过期了。请回到标签页重新订阅。",
+    invalid: "这个确认链接无效，或者已经用过了。如果你已经确认过，订阅已经生效。",
+    error: "出错了", errorText: "暂时连不上服务器，请稍后刷新页面再试。",
+    allDone: "已经退订全部", allDoneText: "你的邮箱和所有订阅都已经从我们这里删除，以后不会再收到 Subdeals 的邮件。",
+    already: "已经退订了", alreadyText: "找不到这个订阅，可能之前已经退订了。",
+    notFound: "找不到这个订阅", notFoundText: "可能已经退订了，或者链接不完整。",
+    none: e => `${e} 现在没有订阅任何标签。`, listLead: e => `${e} 订阅了这些标签：`,
+    pending: "还没确认：请点确认邮件里的链接", howOften: t => `「${t}」多久通知一次`,
+    remove: "退订", removeAll: "退订全部", removeAllAgain: "再点一次，确认退订全部",
+    help: "马上通知：标签里出现排进前 3 名的新价格时发，每天最多 5 封。每天汇总：美东时间晚上 8 点，当天有新价格才发。",
+    changed: f => `已改成「${f}」。`, saveFail: "保存失败了，请稍后再试。", removed: "已退订这个标签。", removeFail: "退订失败了，请稍后再试。",
+    fromEmail: "请从 Subdeals 发给你的邮件里点\"管理订阅\"进来。",
+  },
+  en: {
+    title: "Manage subscriptions", loading: "Loading…", note: "Subdeals · Prices may change. Check the store page.", privacy: "Privacy Policy", home: "Back to home",
+    freq: { daily: "Daily digest", instant: "Instant" },
+    confirmed: t => `You're subscribed to "${t}". We'll email you when a good new price shows up.`,
+    confirmFail: "Couldn't confirm", expired: "This confirmation link has expired. Please go back to the tag page and subscribe again.",
+    invalid: "This confirmation link is invalid or has already been used. If you already confirmed, your subscription is active.",
+    error: "Something went wrong", errorText: "We can't reach the server right now. Please refresh the page in a moment.",
+    allDone: "You're unsubscribed from all", allDoneText: "Your email and all subscriptions have been deleted. You won't get any more emails from Subdeals.",
+    already: "Already unsubscribed", alreadyText: "We couldn't find this subscription. You may have unsubscribed already.",
+    notFound: "Subscription not found", notFoundText: "You may have unsubscribed already, or the link is incomplete.",
+    none: e => `${e} isn't subscribed to any tags right now.`, listLead: e => `${e} is subscribed to these tags:`,
+    pending: "Not confirmed yet: click the link in the confirmation email", howOften: t => `How often to email about "${t}"`,
+    remove: "Unsubscribe", removeAll: "Unsubscribe from all", removeAllAgain: "Click again to unsubscribe from all",
+    help: "Instant: we email you when a new price makes the tag's top 3, up to 5 emails a day. Daily digest: sent at 8 PM Eastern, only on days with new prices.",
+    changed: f => `Changed to ${f}.`, saveFail: "Couldn't save. Please try again later.", removed: "Unsubscribed from this tag.", removeFail: "Couldn't unsubscribe. Please try again later.",
+    fromEmail: "Please open this page from the \"Manage subscriptions\" link in an email from Subdeals.",
+  },
+};
+const T = I18N[LANG];
+const tagOf = s => (LANG === "en" && s.tag_en) || s.tag;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 async function rpc(fn, args) {
@@ -87,67 +140,84 @@ async function rpc(fn, args) {
 }
 const main = $("main");
 const show = (title, lead, extra = "") => { main.innerHTML = `<h1>${esc(title)}</h1><p class="lead">${lead}</p>${extra}`; };
-const homeBtn = `<div class="actions"><a class="primary" href="./">回到首页</a></div>`;
-const params = new URLSearchParams(location.search);
+const home = "./" + (LANG_Q ? "?" + LANG_Q : "");
+const homeBtn = `<div class="actions"><a class="primary" href="${home}">${esc(T.home)}</a></div>`;
 let key = params.get("k") || "";
+document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+document.title = `${T.title} · Subdeals`;
+$("logo").href = home;
+$("note").textContent = T.note;
+$("privacy").textContent = T.privacy;
+$("privacy").href = "privacy.html" + (LANG_Q ? "?" + LANG_Q : "");
+main.innerHTML = `<h1>${esc(T.title)}</h1><p class="lead">${esc(T.loading)}</p>`;
+// 右上角切换语言：记住选择，重新打开这一页
+function drawLang() {
+  const q = new URLSearchParams(location.search);
+  $("lang").innerHTML = [["zh", "中文"], ["en", "EN"]].map(([l, n]) => {
+    q.set("lang", l);
+    return `<a href="?${esc(q.toString())}" data-lang="${l}" lang="${l === "zh" ? "zh-CN" : "en"}"${l === LANG ? ' aria-current="true"' : ""}>${n}</a>`;
+  }).join("<span>/</span>");
+}
+drawLang();
 
 async function confirmLink(token) {
   try {
     const r = await rpc("public_sub_confirm", { p_token: token });
     if (r && r.key) {
       key = r.key;
-      history.replaceState({}, "", "?k=" + encodeURIComponent(key));      // 地址栏换成管理链接，确认链接不再留着
-      return renderManage(`订阅成功：「${esc(r.tag)}」。有新的好价，我们会发邮件告诉你。`);
+      history.replaceState({}, "", "?" + withLang("k=" + encodeURIComponent(key)));      // 地址栏换成管理链接，确认链接不再留着
+      drawLang();
+      return renderManage(esc(T.confirmed(tagOf(r))));
     }
-    show("确认没有成功", r && r.error === "expired" ? "这个确认链接已经过期了。请回到标签页重新订阅。" : "这个确认链接无效，或者已经用过了。如果你已经确认过，订阅已经生效。", homeBtn);
-  } catch (e) { show("出错了", "暂时连不上服务器，请稍后刷新页面再试。"); }
+    show(T.confirmFail, esc(r && r.error === "expired" ? T.expired : T.invalid), homeBtn);
+  } catch (e) { show(T.error, esc(T.errorText)); }
 }
 
 async function unsubscribeAll() {
   try {
     const ok = await rpc("public_sub_remove_all", { p_key: key });
-    history.replaceState({}, "", location.pathname);
-    show(ok ? "已经退订全部" : "已经退订了", ok ? "你的邮箱和所有订阅都已经从我们这里删除，以后不会再收到 Subdeals 的邮件。"
-      : "找不到这个订阅，可能之前已经退订了。", homeBtn);
-  } catch (e) { show("出错了", "暂时连不上服务器，请稍后刷新页面再试。"); }
+    history.replaceState({}, "", location.pathname + (LANG_Q ? "?" + LANG_Q : ""));
+    drawLang();
+    show(ok ? T.allDone : T.already, esc(ok ? T.allDoneText : T.alreadyText), homeBtn);
+  } catch (e) { show(T.error, esc(T.errorText)); }
 }
 
 async function renderManage(note) {
   let d;
-  try { d = await rpc("public_sub_get", { p_key: key }); } catch (e) { return show("出错了", "暂时连不上服务器，请稍后刷新页面再试。"); }
-  if (!d) return show("找不到这个订阅", "可能已经退订了，或者链接不完整。", homeBtn);
-  if (!d.subs.length) return show("管理订阅", `${esc(d.email)} 现在没有订阅任何标签。`, homeBtn);
-  main.innerHTML = `<h1>管理订阅</h1><p class="lead">${esc(d.email)} 订阅了这些标签：</p>
+  try { d = await rpc("public_sub_get", { p_key: key }); } catch (e) { return show(T.error, esc(T.errorText)); }
+  if (!d) return show(T.notFound, esc(T.notFoundText), homeBtn);
+  if (!d.subs.length) return show(T.title, esc(T.none(d.email)), homeBtn);
+  main.innerHTML = `<h1>${esc(T.title)}</h1><p class="lead">${esc(T.listLead(d.email))}</p>
     ${note ? `<div class="note" role="status">${note}</div>` : ""}
     <div class="list">${d.subs.map(s => `<div class="item" data-id="${s.id}">
-      <div class="name"><a href="./?t=${encodeURIComponent(s.slug)}">${esc(s.tag)}</a>${s.status === "pending" ? `<span class="wait">还没确认：请点确认邮件里的链接</span>` : ""}</div>
-      ${s.status === "active" ? `<fieldset class="seg"><legend class="sr">「${esc(s.tag)}」多久通知一次</legend>
-        <label><input type="radio" name="f${s.id}" value="daily" ${s.frequency === "daily" ? "checked" : ""}><span>每天汇总</span></label>
-        <label><input type="radio" name="f${s.id}" value="instant" ${s.frequency === "instant" ? "checked" : ""}><span>马上通知</span></label>
+      <div class="name"><a href="./?${withLang("t=" + encodeURIComponent(s.slug))}">${esc(tagOf(s))}</a>${s.status === "pending" ? `<span class="wait">${esc(T.pending)}</span>` : ""}</div>
+      ${s.status === "active" ? `<fieldset class="seg"><legend class="sr">${esc(T.howOften(tagOf(s)))}</legend>
+        <label><input type="radio" name="f${s.id}" value="daily" ${s.frequency === "daily" ? "checked" : ""}><span>${esc(T.freq.daily)}</span></label>
+        <label><input type="radio" name="f${s.id}" value="instant" ${s.frequency === "instant" ? "checked" : ""}><span>${esc(T.freq.instant)}</span></label>
       </fieldset>` : ""}
-      <button class="ghost danger" type="button" data-remove="${s.id}">退订</button>
+      <button class="ghost danger" type="button" data-remove="${s.id}">${esc(T.remove)}</button>
     </div>`).join("")}</div>
-    <div class="actions"><button class="ghost danger" type="button" id="allBtn">退订全部</button><span class="msg" id="msg" role="status"></span></div>
-    <p class="msg" style="margin-top:22px">马上通知：标签里出现排进前 3 名的新价格时发，每天最多 5 封。每天汇总：美东时间晚上 8 点，当天有新价格才发。</p>`;
+    <div class="actions"><button class="ghost danger" type="button" id="allBtn">${esc(T.removeAll)}</button><span class="msg" id="msg" role="status"></span></div>
+    <p class="msg" style="margin-top:22px">${esc(T.help)}</p>`;
 }
 
 main.addEventListener("change", async e => {
   const r = e.target.closest("input[type=radio]"); if (!r) return;
   const id = Number(r.closest(".item").dataset.id);
-  try { await rpc("public_sub_update", { p_key: key, p_id: id, p_frequency: r.value }); $("msg").textContent = `已改成「${FREQ[r.value]}」。`; }
-  catch (err) { $("msg").textContent = "保存失败了，请稍后再试。"; }
+  try { await rpc("public_sub_update", { p_key: key, p_id: id, p_frequency: r.value }); $("msg").textContent = T.changed(T.freq[r.value]); }
+  catch (err) { $("msg").textContent = T.saveFail; }
 });
 let armed = false;
 main.addEventListener("click", async e => {
   const rm = e.target.closest("[data-remove]");
   if (rm) {
     rm.disabled = true;
-    try { await rpc("public_sub_remove", { p_key: key, p_id: Number(rm.dataset.remove) }); await renderManage("已退订这个标签。"); }
-    catch (err) { rm.disabled = false; $("msg").textContent = "退订失败了，请稍后再试。"; }
+    try { await rpc("public_sub_remove", { p_key: key, p_id: Number(rm.dataset.remove) }); await renderManage(esc(T.removed)); }
+    catch (err) { rm.disabled = false; $("msg").textContent = T.removeFail; }
     return;
   }
   if (e.target.id === "allBtn") {
-    if (!armed) { armed = true; e.target.textContent = "再点一次，确认退订全部"; return; }
+    if (!armed) { armed = true; e.target.textContent = T.removeAllAgain; return; }
     await unsubscribeAll();
   }
 });
@@ -155,7 +225,7 @@ main.addEventListener("click", async e => {
 if (params.get("c")) confirmLink(params.get("c"));
 else if (key && params.get("unsubscribe") === "all") unsubscribeAll();
 else if (key) renderManage();
-else show("管理订阅", "请从 Subdeals 发给你的邮件里点\"管理订阅\"进来。", homeBtn);
+else show(T.title, esc(T.fromEmail), homeBtn);
 </script>
 </body>
 </html>

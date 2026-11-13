@@ -23,7 +23,11 @@
   :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
   .wrap { max-width:760px; margin:0 auto; padding:0 24px; }
   .top { border-bottom:1px solid var(--line); }
-  .top .wrap { padding-top:16px; padding-bottom:16px; }
+  .top .wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:16px; padding-bottom:16px; }
+  .lang { display:flex; align-items:center; gap:6px; font-size:14px; color:var(--faint); }
+  .lang a { color:var(--faint); text-decoration:none; font-weight:600; } .lang a:hover { color:var(--accent); }
+  .lang a[aria-current] { color:var(--ink); }
+  [hidden] { display:none !important; }
   .logo { font-size:26px; letter-spacing:-.03em; line-height:1; color:var(--ink); text-decoration:none; }
   .logo span { font-weight:500; } .logo b { font-weight:800; color:var(--accent); }
   h1 { font:700 40px/1.2 var(--serif); margin:44px 0 6px; }
@@ -40,8 +44,9 @@
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap"><a class="logo" href="./" aria-label="Subdeals 首页"><span>sub</span><b>deals</b></a></div></header>
-<main class="wrap">
+<header class="top"><div class="wrap"><a class="logo" id="logo" href="./" aria-label="Subdeals"><span>sub</span><b>deals</b></a>
+  <nav class="lang"><a href="?lang=zh" lang="zh-CN" data-l="zh">中文</a><span>/</span><a href="?lang=en" lang="en" data-l="en">EN</a></nav></div></header>
+<main class="wrap" id="zh" lang="zh-CN">
   <h1>隐私政策</h1>
   <p class="date">生效日期：2026 年 11 月 13 日</p>
 
@@ -52,6 +57,7 @@
     <li><b>订阅时填写的邮箱</b>，以及你订阅了哪些标签、选的通知频率、订阅和确认的时间。</li>
     <li><b>搜索记录</b>：你在网站上搜索的词，以及打开了哪些标签页。用来统计热门搜索，决定哪些标签公开显示。</li>
     <li><b>浏览器里的随机编号</b>：第一次访问时，我们在你的浏览器里存一个随机编号，只用来统计"有多少不同的人搜过这个标签"。它不包含你的姓名、邮箱等个人信息，清除浏览器数据就会删掉。</li>
+    <li><b>语言选择</b>：如果你切换了语言，浏览器会记住，下次打开还是这个语言。</li>
     <li><b>IP 地址的加密摘要</b>：为了防止有人大量提交订阅或新建标签，我们会记录 IP 地址经过加密处理后的摘要，不保存原始 IP。</li>
     <li><b>发信记录</b>：每封邮件的类型、标题和发送时间，不单独保存收件邮箱。</li>
   </ul>
@@ -100,6 +106,96 @@
   <h2>联系我们</h2>
   <p>Subdeals LLC<br>539 W Commerce St, Dallas, TX 75208, USA<br><a href="mailto:hello@subdeals.net">hello@subdeals.net</a></p>
 </main>
-<footer><div class="wrap"><span>Subdeals · 价格以商家页面为准</span><a href="./">回到首页</a></div></footer>
+
+<main class="wrap" id="en" lang="en" hidden>
+  <h1>Privacy Policy</h1>
+  <p class="date">Effective date: November 13, 2026</p>
+
+  <p>Subdeals (subdeals.net) is a website that collects PC hardware deals. It is operated by <b>Subdeals LLC</b>. This page explains what information we collect, how we use it, how long we keep it, and how you can delete it.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><b>Your email address</b> when you subscribe, plus the tags you subscribe to, the alert frequency you choose, and when you subscribed and confirmed.</li>
+    <li><b>Searches</b>: the words you search for on the site and the tag pages you open. We use this to count popular searches and decide which tags to show publicly.</li>
+    <li><b>A random ID in your browser</b>: on your first visit, we store a random ID in your browser. We only use it to count how many different people searched for a tag. It does not include your name, email or other personal information. Clearing your browser data deletes it.</li>
+    <li><b>Your language choice</b>: if you switch languages, your browser remembers it so the site opens in that language next time.</li>
+    <li><b>A hashed version of your IP address</b>: to stop people from sending large numbers of subscriptions or new tags, we keep a hashed version of your IP address. We do not store the original IP address.</li>
+    <li><b>Email records</b>: the type, subject and send time of each email. We do not store the recipient address with these records.</li>
+  </ul>
+  <p>We do not use ad tracking, and we do not show third-party ads on the site.</p>
+
+  <h2>How we use it</h2>
+  <ul>
+    <li>To send your confirmation email, and the price alerts or daily digests for the tags you subscribe to.</li>
+    <li>To understand searches and subscriptions so we can improve the site.</li>
+    <li>To prevent abuse.</li>
+  </ul>
+  <p>We <b>do not sell or rent</b> your email address, and we will not use it for marketing that has nothing to do with your subscriptions.</p>
+
+  <h2>Service providers</h2>
+  <p>These providers process data only as we instruct, so the site and emails can work:</p>
+  <ul>
+    <li><b>Supabase</b>: hosts our database (emails, subscriptions, searches and so on).</li>
+    <li><b>Resend</b>: sends our emails and records whether they were delivered.</li>
+    <li><b>GitHub Pages</b>: hosts the website.</li>
+    <li><b>Google Fonts</b>: provides the fonts. When you open the site, your browser downloads fonts from Google.</li>
+  </ul>
+
+  <h2>How long we keep it</h2>
+  <ul>
+    <li>When you click "Unsubscribe from all", your email and all your subscriptions are <b>deleted from our database right away</b>. The same happens when you unsubscribe from your last tag.</li>
+    <li>If you don't confirm within 7 days, the subscription request and your email are deleted automatically.</li>
+    <li>Records of which deals we already sent you are kept for 45 days so we don't send the same deal twice.</li>
+    <li>Hashed IP addresses used to prevent subscription abuse are kept for 2 days.</li>
+  </ul>
+
+  <h2>Your choices</h2>
+  <ul>
+    <li>Every email has "Manage subscriptions" and "Unsubscribe from all" links at the bottom. One click lets you change the frequency or unsubscribe.</li>
+    <li>To ask what we keep about you or to have it deleted, email <a href="mailto:hello@subdeals.net">hello@subdeals.net</a>.</li>
+  </ul>
+
+  <h2>Links and prices</h2>
+  <p>Product links on the site and in emails take you to stores or deal sites. Right now these are all regular links, and we do not earn a commission when you click or buy. If we start using affiliate links, we will say so on this page and on the relevant pages. Prices and stock change quickly. The store page is always the final word.</p>
+
+  <h2>Children</h2>
+  <p>Subdeals is not meant for children under 13, and we do not knowingly collect their information.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes, we will update this page and the effective date above.</p>
+
+  <h2>Contact us</h2>
+  <p>Subdeals LLC<br>539 W Commerce St, Dallas, TX 75208, USA<br><a href="mailto:hello@subdeals.net">hello@subdeals.net</a></p>
+</main>
+<footer><div class="wrap"><span id="note">Subdeals · 价格以商家页面为准</span><a href="./" id="home">回到首页</a></div></footer>
+<script>
+// 语言：网址里的 ?lang= 优先，然后是上次选的，最后看浏览器语言（中文显示中文，其他都显示英文）
+(function () {
+  const params = new URLSearchParams(location.search);
+  let lang = params.get("lang");
+  if (lang === "zh" || lang === "en") { try { localStorage.setItem("sd_lang", lang); } catch (e) {} }
+  else {
+    try { lang = localStorage.getItem("sd_lang"); } catch (e) { lang = null; }
+    if (lang !== "zh" && lang !== "en") {
+      const prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+      lang = prefs.some(l => /^zh\b/i.test(l)) ? "zh" : "en";
+    }
+  }
+  const en = lang === "en";
+  document.getElementById("zh").hidden = en;
+  document.getElementById("en").hidden = !en;
+  document.documentElement.lang = en ? "en" : "zh-CN";
+  document.title = en ? "Privacy Policy · Subdeals" : "隐私政策 · Subdeals";
+  document.querySelector('meta[name="description"]').content = en
+    ? "What Subdeals collects, how we use it, how long we keep it, and how you can delete it."
+    : "Subdeals 收集哪些信息、怎么用、保存多久，以及你可以怎么删除。";
+  const home = "./" + (params.has("lang") ? "?lang=" + lang : "");
+  document.getElementById("logo").href = home;
+  document.getElementById("home").href = home;
+  document.getElementById("home").textContent = en ? "Back to home" : "回到首页";
+  document.getElementById("note").textContent = en ? "Subdeals · Prices may change. Check the store page." : "Subdeals · 价格以商家页面为准";
+  document.querySelector(`.lang a[data-l="${lang}"]`).setAttribute("aria-current", "true");
+})();
+</script>
 </body>
 </html>
