@@ -23,7 +23,7 @@ DRY_OPTIONS = {
 
 DB_COLUMNS = ["title", "url", "article_url", "source", "store", "price", "category", "gpu", "ram_gb",
               "capacity_tb", "quantity", "brand", "series", "condition", "status", "price_checked",
-              "threshold", "adjustments_applied", "matched_rule_id"]
+              "threshold", "adjustments_applied", "matched_rule_id", "image_url"]
 
 
 GPU_CATEGORIES = ("laptop", "desktop", "graphics_card")
@@ -69,6 +69,7 @@ def process_posts(items, options, rules, adjustments):
     rows = []
     for it, p in zip(items, parsed):
         row = dict(it)
+        row["image_url"] = row.pop("image", None)
         if it.get("source") == "woot":
             row["store"] = "Woot"
         if p is None:

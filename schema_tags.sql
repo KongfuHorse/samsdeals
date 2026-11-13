@@ -227,7 +227,7 @@ begin
   if t.kind = 'structured' then
     v_storage := t.conditions->>'category' in ('ssd', 'hdd');
     select coalesce(jsonb_agg(to_jsonb(x) - 'sort_key' order by x.sort_key nulls last, x.price), '[]') into v_deals from (
-      select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at,
+      select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at, d.image_url,
              case when v_storage and d.capacity_tb > 0 then round(d.price / greatest(d.quantity, 1) / d.capacity_tb, 2) end as per_tb,
              case when v_storage then case when d.capacity_tb > 0 then d.price / greatest(d.quantity, 1) / d.capacity_tb end
                   else d.price end as sort_key
@@ -243,7 +243,7 @@ begin
     select array_agg('%' || replace(replace(replace(k, '\', '\\'), '%', '\%'), '_', '\_') || '%') into v_kw
     from jsonb_array_elements_text(coalesce(t.conditions->'keywords', '[]')) k;
     select coalesce(jsonb_agg(to_jsonb(x) order by x.price), '[]') into v_deals from (
-      select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at,
+      select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at, d.image_url,
              null::numeric as per_tb
       from deals d
       where d.created_at > now() - interval '30 days' and d.price is not null

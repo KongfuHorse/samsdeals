@@ -7,157 +7,245 @@
 <meta name="description" content="搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&text=%E7%B2%BE%E9%80%89&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif:wght@700&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper:#ECEFF1; --surface:#F8F9FA; --ink:#17202A; --muted:#5D6772; --faint:#8B949E;
-    --line:#D3D9DE; --seal:#BE3A2E; --hover:#E1E6EA;
-    --num:"Archivo", "Noto Sans SC", system-ui, sans-serif;
-    --text:"Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --bg:#FFFFFF; --ink:#1B1A2E; --muted:#4C4A63; --faint:#6B6985; --line:#E7E6EF; --line2:#EFEEF5;
+    --band:#FAFAFD; --chip:#F3F2F8; --tile:#FFFFFF; --tileline:#ECEBF3; --first:#F8F7FD;
+    --accent:#4338CA; --btn:#4338CA; --hl:#E6E3FF; --rank:#B3B0CC; --field:#CFCDE0; --shadow:rgba(27,26,46,.18);
+    --sans:"Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --serif:"Noto Serif", "Noto Serif SC", "Songti SC", serif;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --paper:#111519; --surface:#181D22; --ink:#E6EAEE; --muted:#9AA3AD; --faint:#6C7580;
-      --line:#2A3138; --seal:#DE5A4C; --hover:#222930;
+      --bg:#121220; --ink:#ECEBF5; --muted:#BDBBD2; --faint:#9A97B5; --line:#2A2940; --line2:#232236;
+      --band:#17162A; --chip:#222138; --tile:#FFFFFF; --tileline:#FFFFFF; --first:#1B1A33;
+      --accent:#ABA6FF; --btn:#5046E5; --hl:#2E2A5C; --rank:#5C5980; --field:#3A3955; --shadow:rgba(0,0,0,.45);
     }
   }
   * { box-sizing:border-box; }
   html { -webkit-text-size-adjust:100%; }
-  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.7 var(--text); }
-  a { color:inherit; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 var(--sans); }
+  a { color:inherit; text-decoration:none; }
   button, input { font:inherit; color:inherit; }
-  :focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:2px; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
   [hidden] { display:none !important; }
-  .wrap { max-width:760px; margin:0 auto; padding:0 20px; }
+  .wrap { max-width:1180px; margin:0 auto; padding:0 24px; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 
-  /* 品牌 */
-  .brand { display:inline-flex; align-items:center; gap:12px; text-decoration:none; }
-  .seal { width:34px; height:34px; display:grid; place-items:center; background:var(--seal); color:#fff; flex:none;
-          border-radius:5px; font:900 13px/1 "Noto Serif SC", serif; letter-spacing:.5px; writing-mode:vertical-rl;
-          transform:rotate(-4deg); }
-  .brand-name { font:700 19px/1 var(--num); font-stretch:112%; letter-spacing:-.2px; white-space:nowrap; }
-
-  /* 首页：居中的品牌和搜索框 */
-  .home-hero { padding:15vh 0 40px; text-align:center; }
-  .home-hero .brand { gap:18px; margin-bottom:34px; }
-  .home-hero .seal { width:58px; height:58px; font-size:22px; border-radius:8px; }
-  .home-hero .brand-name { font-size:44px; letter-spacing:-1px; }
-
-  /* 标签页：顶栏 */
-  .bar { display:flex; align-items:center; gap:20px; padding:22px 0; }
-  .bar .search { flex:1; }
+  /* 顶栏 */
+  .top { border-bottom:1px solid var(--line); }
+  .top .wrap { display:flex; flex-wrap:wrap; align-items:center; gap:12px 28px; padding-top:14px; padding-bottom:14px; }
+  .logo { font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap; }
+  .logo b { font-weight:800; color:var(--accent); }
+  .logo span { font-weight:500; }
+  .top .spacer { flex:1; }
+  .top .search { flex:1 1 360px; max-width:620px; }
+  .pill { display:inline-flex; align-items:center; min-height:44px; padding:0 22px; border-radius:999px; background:var(--btn); color:#fff; font-weight:700; font-size:15px; border:0; cursor:pointer; white-space:nowrap; }
 
   /* 搜索框 */
-  .search { position:relative; max-width:600px; margin:0 auto; text-align:left; }
-  .search form { display:flex; align-items:center; background:var(--surface); border:1.5px solid var(--line); border-radius:28px;
-                 padding:0 6px 0 20px; height:54px; }
-  .bar .search form { height:46px; }
-  .search form:focus-within { border-color:var(--ink); }
-  .search.open form { border-radius:24px 24px 0 0; border-bottom-color:var(--line); }
-  .search input { flex:1; min-width:0; border:0; background:none; outline:none; font-size:17px; height:100%; }
+  .search { position:relative; }
+  .search form { display:flex; gap:10px; }
+  .search input { flex:1; min-width:0; height:54px; padding:0 18px; border:1.5px solid var(--field); border-radius:12px; background:var(--bg); outline:none; font-size:16px; }
+  .search input:focus { border-color:var(--accent); }
   .search input::placeholder { color:var(--faint); }
-  .search .go { border:0; background:none; cursor:pointer; width:42px; height:42px; border-radius:50%; display:grid; place-items:center; color:var(--muted); flex:none; }
-  .search .go:hover { background:var(--hover); color:var(--ink); }
-  .suggest { position:absolute; left:0; right:0; top:100%; z-index:5; margin:0; padding:6px 0 10px; list-style:none; background:var(--surface);
-             border:1.5px solid var(--ink); border-top:0; border-radius:0 0 24px 24px; }
-  .suggest li { padding:9px 20px; cursor:pointer; display:flex; justify-content:space-between; gap:12px; }
-  .suggest li[aria-selected="true"], .suggest li:hover { background:var(--hover); }
+  .search .go { flex:none; border:0; border-radius:12px; background:var(--btn); color:#fff; font-weight:700; padding:0 28px; cursor:pointer; }
+  .top .search input { height:44px; border-radius:10px; font-size:15px; }
+  .top .search .go { border-radius:10px; padding:0 20px; }
+  .suggest { position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:5; margin:0; padding:6px 0; list-style:none; background:var(--bg);
+             border:1px solid var(--line); border-radius:12px; box-shadow:0 14px 34px var(--shadow); }
+  .suggest li { padding:10px 18px; cursor:pointer; display:flex; justify-content:space-between; gap:12px; }
+  .suggest li[aria-selected="true"], .suggest li:hover { background:var(--chip); }
   .suggest small { color:var(--faint); font-size:13px; white-space:nowrap; }
 
   /* 标签按钮 */
-  .chips { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:22px auto 0; max-width:640px; padding:0; list-style:none; }
-  .chips a, .chip-btn { display:inline-block; padding:5px 14px; border:1px solid var(--line); border-radius:999px; font-size:14px;
-                        text-decoration:none; background:none; cursor:pointer; color:var(--ink); }
-  .chips a:hover, .chip-btn:hover { background:var(--hover); border-color:var(--faint); }
+  .chips { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0; padding:0; list-style:none; }
+  .chips .lead { font-size:14px; color:var(--faint); margin-right:4px; }
+  .chips a { display:inline-block; padding:7px 14px; border-radius:999px; background:var(--chip); font-size:14px; font-weight:600; }
+  .chips a:hover { color:var(--accent); }
+
+  /* 首页：上半部分 */
+  .hero { display:flex; flex-wrap:wrap; align-items:center; gap:48px; padding:64px 0 56px; }
+  .hero-text { flex:1 1 480px; min-width:0; display:flex; flex-direction:column; gap:24px; }
+  .hero h1 { margin:0; font:700 54px/1.2 var(--serif); letter-spacing:-.01em; }
+  .hero h1 mark { background:var(--hl); color:var(--accent); padding:0 8px; }
+  .hero p { margin:0; font-size:18px; line-height:1.7; color:var(--muted); max-width:520px; }
+  .hero .search { max-width:560px; }
+  .collage { flex:1 1 400px; min-width:0; position:relative; height:440px; }
+  .collage .stripes { position:absolute; top:24px; right:10px; width:76%; height:380px; border-radius:34px; transform:rotate(6deg);
+                      background:repeating-linear-gradient(115deg, var(--btn) 0 14px, #3730A3 14px 22px); }
+  .collage .card { position:absolute; top:64px; right:56px; width:62%; height:290px; border-radius:26px; background:#fff; color:#1B1A2E;
+                   box-shadow:0 24px 60px var(--shadow); padding:20px; display:flex; flex-direction:column; gap:10px; }
+  .collage .card .img { flex:1; min-height:0; background:#fff; border:1px solid #ECEBF3; border-radius:16px; display:flex; align-items:center; justify-content:center; padding:12px; }
+  .collage .card img { max-width:100%; max-height:100%; object-fit:contain; }
+  .collage .card small { font-size:13px; font-weight:600; color:#6B6985; }
+  .collage .card strong { font-size:15px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+  .collage .bubble { position:absolute; top:34px; right:36%; background:#E6E3FF; color:#4338CA; font-weight:800; font-size:20px; padding:10px 18px; border-radius:14px; }
+  .collage .mini { position:absolute; bottom:0; left:0; width:240px; background:#fff; color:#1B1A2E; border-radius:18px; box-shadow:0 18px 44px var(--shadow);
+                   padding:14px 16px; display:flex; gap:12px; align-items:center; }
+  .collage .mini img { width:56px; height:56px; object-fit:contain; flex:none; }
+  .collage .mini span { display:flex; flex-direction:column; min-width:0; }
+  .collage .mini small { font-size:12px; color:#6B6985; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .collage .mini b { font-size:18px; }
+
+  .facts-band { border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--band); }
+  .facts-band .wrap { display:flex; flex-wrap:wrap; justify-content:space-around; gap:10px 40px; padding-top:20px; padding-bottom:20px; font-size:15px; color:var(--muted); }
+  .facts-band b { color:var(--ink); font-size:18px; }
+
+  .sec-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; margin:52px 0 24px; }
+  .sec-head h2 { margin:0; font:700 34px/1.2 var(--serif); }
+  .sec-head span { font-size:14px; color:var(--faint); }
+
+  /* 首页：精选卡片 */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:26px 22px; }
+  .card-deal { display:flex; flex-direction:column; gap:14px; }
+  .card-deal .pic { position:relative; aspect-ratio:4 / 3; min-height:0; overflow:hidden; background:var(--tile); border:1px solid var(--tileline); border-radius:20px; display:flex; align-items:center; justify-content:center; padding:26px 26px 58px; }
+  .card-deal .pic img { width:100%; height:100%; object-fit:contain; }
+  .card-deal .price-chip { position:absolute; left:16px; bottom:16px; background:#fff; color:#4338CA; font-weight:800; font-size:18px; padding:6px 12px; border-radius:10px;
+                           box-shadow:0 6px 16px rgba(27,26,46,.10); font-variant-numeric:tabular-nums; }
+  .card-deal .body { display:flex; flex-direction:column; gap:6px; padding:0 4px; }
+  .card-deal .kicker { font-size:13px; font-weight:600; color:var(--accent); }
+  .card-deal .t { font-size:17px; font-weight:600; line-height:1.4; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+  .card-deal:hover .t { color:var(--accent); }
+  .card-deal .price-inline { display:none; }
+  .meta { font-size:13px; color:var(--faint); }
+  .pin { color:var(--accent); font-weight:600; }
+  .icon { color:#A3A0C2; }
+
+  /* 标签页 */
+  .tag-head { display:flex; flex-direction:column; gap:12px; padding:44px 0 0; }
+  .tag-head .eyebrow { font-size:14px; font-weight:600; color:var(--accent); }
+  .tag-head h1 { margin:0; font:700 52px/1.15 var(--serif); }
+  .tag-head p { margin:0; font-size:17px; color:var(--muted); }
+  .sub { margin:30px 0 0; background:var(--hl); border-radius:20px; padding:22px 26px; display:flex; flex-wrap:wrap; align-items:center; gap:14px 18px; }
+  .sub .label { flex:1 1 220px; font-weight:700; font-size:17px; }
+  .sub input[type=email] { flex:1 1 240px; min-width:0; border:0; border-radius:10px; padding:0 14px; height:48px; background:var(--bg); outline:none; font-size:15px; }
+  .sub input[type=email]:focus { box-shadow:0 0 0 2px var(--accent); }
+  .seg { display:flex; background:var(--bg); border-radius:10px; padding:4px; border:0; margin:0; min-width:0; }
+  .seg label { position:relative; }
+  .seg input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+  .seg span { display:flex; align-items:center; min-height:40px; padding:0 14px; border-radius:8px; font-size:14px; font-weight:600; white-space:nowrap; }
+  .seg input:checked + span { background:var(--btn); color:#fff; }
+  .seg input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
+  .sub .dark { border:0; border-radius:10px; background:var(--ink); color:var(--bg); font-weight:700; padding:0 24px; min-height:48px; cursor:pointer; }
+  .sub .msg { flex-basis:100%; margin:0; font-size:14px; }
+
+  .rank-list { margin:30px 0 0; border:1px solid var(--line); border-radius:20px; overflow:hidden; }
+  .row { display:flex; align-items:center; gap:18px; padding:16px 22px; border-bottom:1px solid var(--line2); }
+  .row:last-child { border-bottom:0; }
+  .row.first { background:var(--first); }
+  .row .no { width:34px; flex:none; text-align:center; font:700 26px/1 var(--serif); color:var(--rank); }
+  .row .no.hi { color:var(--accent); }
+  .thumb { width:80px; height:80px; flex:none; background:var(--tile); border:1px solid var(--tileline); border-radius:12px; display:flex; align-items:center; justify-content:center; padding:8px; }
+  .thumb img { width:100%; height:100%; object-fit:contain; }
+  .row .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .row .t { font-size:16px; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
+  .row:hover .t { color:var(--accent); }
+  .row .money { flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:2px; min-width:110px; text-align:right; }
+  .row .big { font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .row.first .big { color:var(--accent); }
+  .row .small { font-size:13px; color:var(--faint); white-space:nowrap; }
 
   /* 搜索没有结果时的提示 */
-  .miss { max-width:600px; margin:18px auto 0; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:var(--surface); text-align:left; }
+  .miss { margin:18px 0 0; padding:18px 20px; border:1px solid var(--line); border-radius:16px; background:var(--band); max-width:620px; }
   .miss p { margin:0 0 10px; }
-  .miss .chips { justify-content:flex-start; margin:0 0 14px; }
+  .miss .chips { margin:0 0 14px; }
   .miss .hint { color:var(--muted); font-size:14px; margin:10px 0 0; }
-  .primary { background:var(--ink); color:var(--paper); border:0; border-radius:999px; padding:9px 20px; font-weight:500; cursor:pointer; }
+  .primary { background:var(--btn); color:#fff; border:0; border-radius:999px; padding:10px 22px; font-weight:700; cursor:pointer; }
   .primary:disabled { opacity:.55; cursor:default; }
-
-  /* 小标题 */
-  .section-title { font-size:15px; font-weight:700; margin:40px 0 0; padding-bottom:10px; border-bottom:1px solid var(--line); }
-
-  /* 优惠列表 */
-  .deal { display:grid; grid-template-columns:1fr auto; gap:6px 28px; padding:24px 0 26px; border-bottom:1px solid var(--line); }
-  .ranked .deal { grid-template-columns:30px 1fr auto; column-gap:14px; }
-  .rank { font:600 17px/1.65 var(--num); color:var(--faint); font-variant-numeric:tabular-nums; grid-row:1 / span 2; }
-  .deal-title { font-size:17px; font-weight:500; line-height:1.5; margin:0; overflow-wrap:anywhere; }
-  .deal-title a { text-decoration:none; }
-  .deal-title a:hover { text-decoration:underline; text-underline-offset:3px; }
-  .facts { color:var(--muted); font-size:14px; display:flex; flex-wrap:wrap; gap:4px 16px; }
-  .ranked .facts { grid-column:2; }
-  .price-col { grid-row:1 / span 2; text-align:right; }
-  .deal:not(.r) .price-col { grid-column:2; }
-  .ranked .price-col { grid-column:3; }
-  .price { font:800 30px/1.1 var(--num); font-stretch:115%; font-variant-numeric:tabular-nums; letter-spacing:-.5px; white-space:nowrap; }
-  .per { font:500 14px/1 var(--num); color:var(--muted); margin-top:6px; white-space:nowrap; }
-  .pin { color:var(--seal); font-weight:500; }
-
-  /* 标签页标题和订阅 */
-  .tag-head { padding:26px 0 0; }
-  .tag-head h1 { font-size:30px; line-height:1.3; margin:0 0 6px; letter-spacing:-.3px; }
-  .tag-head p { margin:0; color:var(--muted); font-size:15px; }
-  .sub { margin:24px 0 0; padding:18px 20px; border:1px solid var(--line); border-radius:14px; background:var(--surface); }
-  .sub h2 { font-size:15px; margin:0 0 10px; }
-  .sub .row { display:flex; gap:10px; flex-wrap:wrap; }
-  .sub input[type=email] { flex:1 1 220px; min-width:0; height:42px; padding:0 14px; border:1.5px solid var(--line); border-radius:999px; background:var(--paper); outline:none; }
-  .sub input[type=email]:focus { border-color:var(--ink); }
-  .sub .freq { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; font-size:14px; color:var(--muted); }
-  .sub .freq label { display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
-  .sub .freq input { accent-color:var(--ink); margin:0; }
-  .sub .msg { margin:12px 0 0; font-size:14px; }
 
   .empty { padding:48px 0; color:var(--muted); }
   .empty strong { display:block; color:var(--ink); font-size:18px; margin-bottom:6px; }
-  footer { padding:40px 0 56px; color:var(--faint); font-size:13px; }
+  footer { border-top:1px solid var(--line); margin-top:64px; }
+  footer .wrap { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 24px; padding-top:26px; padding-bottom:40px; font-size:14px; color:var(--faint); }
+  footer a:hover { color:var(--accent); }
 
-  @media (max-width:640px) {
-    .home-hero { padding-top:9vh; }
-    .home-hero .seal { width:46px; height:46px; font-size:17px; }
-    .home-hero .brand-name { font-size:34px; }
-    .bar { flex-wrap:wrap; gap:14px; }
-    .bar .search { flex-basis:100%; }
-    .deal, .ranked .deal { grid-template-columns:1fr; }
-    .ranked .deal { grid-template-columns:28px 1fr; }
-    .price-col, .ranked .price-col { grid-column:auto; grid-row:auto; text-align:left; margin-top:8px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
-    .ranked .price-col, .ranked .facts { grid-column:2; }
-    .per { margin-top:0; }
-    .tag-head h1 { font-size:25px; }
+  @media (max-width:760px) {
+    .wrap { padding:0 16px; }
+    .top .wrap { gap:10px 14px; padding-top:10px; padding-bottom:10px; }
+    .logo { font-size:23px; }
+    .top .pill { min-height:40px; padding:0 16px; font-size:14px; }
+    #viewTag .top .search { flex-basis:100%; order:3; }
+    .hero { padding:32px 0 28px; gap:22px; }
+    .hero-text { gap:18px; }
+    .hero h1 { font-size:36px; line-height:1.25; }
+    .hero p { font-size:15px; }
+    .hero .search form { flex-direction:column; }
+    .hero .search input { flex:none; height:52px; }
+    .hero .search .go { min-height:50px; }
+    .collage { display:none; }
+    .facts-band .wrap { justify-content:space-between; gap:8px 16px; font-size:13px; }
+    .facts-band .src { display:none; }
+    .sec-head { margin:30px 0 18px; }
+    .sec-head h2 { font-size:26px; }
+    .grid { grid-template-columns:1fr; gap:0; }
+    .card-deal { flex-direction:row; gap:14px; align-items:center; padding:0 0 16px; margin-bottom:16px; border-bottom:1px solid var(--line2); }
+    .card-deal .pic { width:104px; height:104px; aspect-ratio:auto; flex:none; padding:10px; border-radius:14px; }
+    .card-deal .price-chip { display:none; }
+    .card-deal .price-inline { display:block; font-size:19px; font-weight:800; font-variant-numeric:tabular-nums; }
+    .card-deal .body { padding:0; min-width:0; gap:4px; }
+    .card-deal .t { font-size:15px; }
+    .tag-head { padding-top:24px; gap:8px; }
+    .tag-head h1 { font-size:34px; }
+    .tag-head p { font-size:14px; }
+    .sub { flex-direction:column; align-items:stretch; padding:18px; gap:10px; margin-top:20px; }
+    .sub .label { flex:none; font-size:16px; }
+    .sub input[type=email] { flex:none; font-size:16px; }
+    .seg label { flex:1; } .seg span { justify-content:center; }
+    .rank-list { margin:20px -16px 0; border-radius:0; border-left:0; border-right:0; }
+    .row { gap:12px; padding:14px 16px; align-items:flex-start; }
+    .row .no { width:22px; font-size:20px; padding-top:20px; }
+    .thumb { width:64px; height:64px; padding:6px; border-radius:10px; }
+    .row .t { font-size:14px; }
+    .row .money { display:none; }
+    .row .money-inline { display:block !important; font-size:17px; font-weight:800; }
+    .row.first .money-inline { color:var(--accent); }
   }
+  .row .money-inline { display:none; }
+  .row .money-inline small { font-size:12px; font-weight:500; color:var(--faint); }
 </style>
 </head>
 <body>
-<div class="wrap">
 
   <!-- 首页 -->
   <div id="viewHome" hidden>
-    <section class="home-hero">
-      <a class="brand" href="./" data-home><span class="seal" aria-hidden="true">精选</span><span class="brand-name">Subdeals</span></a>
-      <div class="search" id="searchHome"></div>
-      <ul class="chips" id="hotTags"></ul>
-      <div class="miss" id="missHome" hidden></div>
-    </section>
-    <h2 class="section-title" id="featuredTitle"></h2>
-    <main id="featured" aria-live="polite"></main>
+    <header class="top"><div class="wrap">
+      <a class="logo" href="./" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
+      <span class="spacer"></span>
+      <button class="pill" type="button" id="subHint"></button>
+    </div></header>
+    <div class="wrap">
+      <section class="hero">
+        <div class="hero-text">
+          <h1 id="heroTitle"></h1>
+          <p id="heroText"></p>
+          <div class="search" id="searchHome"></div>
+          <ul class="chips" id="hotTags"></ul>
+          <div class="miss" id="missHome" hidden></div>
+        </div>
+        <div class="collage" id="collage" aria-hidden="true" hidden></div>
+      </section>
+    </div>
+    <section class="facts-band"><div class="wrap" id="facts"></div></section>
+    <div class="wrap">
+      <div class="sec-head"><h2 id="featuredTitle"></h2><span id="featuredNote"></span></div>
+      <main id="featured" class="grid" aria-live="polite"></main>
+    </div>
   </div>
 
   <!-- 标签页 -->
   <div id="viewTag" hidden>
-    <header class="bar">
-      <a class="brand" href="./" data-home><span class="seal" aria-hidden="true">精选</span><span class="brand-name">Subdeals</span></a>
+    <header class="top"><div class="wrap">
+      <a class="logo" href="./" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
       <div class="search" id="searchTag"></div>
-    </header>
-    <div class="miss" id="missTag" hidden></div>
-    <div id="tagBody" aria-live="polite"></div>
+    </div></header>
+    <div class="wrap">
+      <div class="miss" id="missTag" hidden></div>
+      <div id="tagBody" aria-live="polite"></div>
+    </div>
   </div>
 
-  <footer id="status">&nbsp;</footer>
-</div>
+  <footer><div class="wrap"><span id="status">&nbsp;</span><a href="mailto:hello@subdeals.net">hello@subdeals.net</a></div></footer>
 
 <script>
 // ===== 设置（只改这里）=====
@@ -170,9 +258,24 @@ const LANG = "zh";             // 界面语言（第三阶段加 en）
 
 // 所有界面文字都放在这里，以后加英文只需要加一个 en
 const I18N = { zh: {
-  placeholder: "想买什么？比如 5090 笔记本、20TB 硬盘",
+  placeholder: "比如 5090 游戏本、4TB 固态",
   searchBtn: "搜索",
-  featured: "精选推荐",
+  heroTitle: ["搜一个型号，", "看 30 天最低价"],
+  heroText: "Slickdeals、Reddit、Woot 上的电脑硬件优惠，我们按型号归类，从便宜到贵排好给你看。",
+  hotLead: "大家在搜",
+  subHint: "订阅降价提醒",
+  subHintMsg: "先搜一个型号，在它的页面里订阅",
+  factsTags: n => `<b>${n}</b> 个型号标签`,
+  factsCheck: s => `上次检查：<b>${s}</b>`,
+  factsSources: "来源：Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar",
+  featured: "今日精选",
+  featuredNote: "只放达到我们价格标准的",
+  topOf: name => `${name} · 第 1 名`,
+  lowestOf: name => `${name} · 最低`,
+  sortPerTb: "按每 TB 价格排",
+  sortTotal: "按总价排",
+  total: p => `总价 ${p}`,
+  perTbShort: p => `${p}/TB`,
   featuredEmpty: "现在没有精选推荐",
   featuredEmptyHint: "可以在上面搜索你关心的品类，看看最近的价格。",
   loading: "正在加载…",
@@ -184,8 +287,7 @@ const I18N = { zh: {
   perTb: p => `每 TB ${p}`,
   justNow: "刚刚", minAgo: n => `${n} 分钟前`, hourAgo: n => `${n} 小时前`, dayAgo: n => `${n} 天前`,
   found: s => `${s}发现`,
-  lastCheck: s => `上次检查在 ${s}。价格以商家页面为准。`,
-  priceNote: "价格以商家页面为准。",
+  priceNote: "Subdeals · 价格以商家页面为准",
   dealsCount: n => `${n} 条价格`,
   missTitle: q => `还没有「${q}」这个标签`,
   missRelated: "你要找的是不是：",
@@ -195,25 +297,26 @@ const I18N = { zh: {
   errLimited: "今天新建的标签太多了，请明天再试。",
   errNotProduct: "看不出这是哪种商品。请换一个说法，比如写上品牌和型号。",
   errServer: "新建失败了，请稍后再试。",
-  rankTotal: n => `近 30 天收集到 ${n} 条价格，从低到高排列。`,
-  rankPerTb: n => `近 30 天收集到 ${n} 条价格，按每 TB 价格从低到高排列。`,
-  rankKeyword: n => `近 30 天有 ${n} 条可能相关的价格，从低到高排列。这个品类刚开始收集，结果可能不全。`,
+  rankTotal: n => `近 30 天收集到 ${n} 条价格，从便宜到贵排好了。`,
+  rankPerTb: n => `近 30 天收集到 ${n} 条价格，按每 TB 价格从便宜到贵排好了。`,
+  rankKeyword: n => `近 30 天有 ${n} 条可能相关的价格，从便宜到贵排好了。这个品类刚开始收集，结果可能不全。`,
   tagEmpty: "还没有收集到价格",
   tagEmptyNew: "这个标签刚建好，我们已经开始收集。可以先订阅，有价格了再来看。",
   tagEmptyOld: "近 30 天没有收集到这类商品的价格。可以先订阅，有新价格了再来看。",
   tagNotFound: "找不到这个标签",
   tagNotFoundHint: "可以回到首页重新搜索。",
   backHome: "回到首页",
-  subTitle: name => `订阅「${name}」的新优惠`,
+  subTitle: "有新的好价，发邮件告诉你",
   subEmail: "你的邮箱",
-  subInstant: "有新优惠马上通知",
-  subDaily: "每天汇总一封",
-  subBtn: "订阅这个标签",
+  subFreq: "多久通知一次",
+  subInstant: "马上通知",
+  subDaily: "每天汇总",
+  subBtn: "订阅",
   subSoon: "订阅功能即将开放。我们现在不会保存你的邮箱，开放后请再来订阅。",
   subBadEmail: "请填写正确的邮箱。",
   pageTitle: name => `${name} 价格排行 · Subdeals`,
-  homeTitle: "Subdeals · 精选电脑硬件优惠",
-  categories: { laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
+  homeTitle: "Subdeals · 电脑硬件好价，按型号排好",
+  categories: { laptop:"游戏本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
   conditions: { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" },
 } };
 const T = I18N[LANG];
@@ -224,7 +327,7 @@ const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
-const money = (x, cents) => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 });
+const money = (x, cents) => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: cents || Number(x) % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const tagName = t => (LANG !== "zh" && t.name_en) || t.name;
 function ago(t) {
   const m = Math.max(0, Math.round((Date.now() - new Date(t)) / 60000));
@@ -340,7 +443,7 @@ function mountSearch(el, missEl) {
   el.innerHTML = `<form role="search" autocomplete="off">
       <input type="search" enterkeyhint="search" aria-label="${esc(T.searchBtn)}" placeholder="${esc(T.placeholder)}" maxlength="60"
              role="combobox" aria-expanded="false" aria-autocomplete="list">
-      <button class="go" type="submit" aria-label="${esc(T.searchBtn)}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg></button>
+      <button class="go" type="submit">${esc(T.searchBtn)}</button>
     </form><ul class="suggest" role="listbox" hidden></ul>`;
   const input = el.querySelector("input"), list = el.querySelector(".suggest");
   let items = [], active = -1;
@@ -440,15 +543,51 @@ function route() {
 }
 
 // ---------- 优惠条目 ----------
-function dealHtml(d, opts = {}) {
-  const facts = [opts.showCategory ? T.categories[d.category] : "", T.conditions[d.condition], d.quantity > 1 ? T.pack(d.quantity) : "", d.store,
-                 SRC[d.source] ? T.from(SRC[d.source]) : "", opts.found ? T.found(ago(d.created_at)) : ago(d.created_at)].filter(Boolean);
-  return `<article class="deal ${opts.rank ? "r" : ""}">
-    ${opts.rank ? `<div class="rank">${opts.rank}</div>` : ""}
-    <h3 class="deal-title"><a href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">${esc(cleanTitle(d.title))}</a></h3>
-    <div class="price-col"><div class="price">${money(d.price)}</div>${d.per_tb != null ? `<div class="per">${esc(T.perTb(money(d.per_tb, true)))}</div>` : ""}</div>
-    <div class="facts">${d.pinned ? `<span class="pin">${esc(T.pinned)}</span>` : ""}${facts.map(f => `<span>${esc(f)}</span>`).join("")}</div>
-  </article>`;
+// 没有商品图时，按品类显示一个小图标
+const ICONS = {
+  laptop: '<rect x="12" y="14" width="40" height="26" rx="3"/><path d="M6 46h52l-4 6H10z"/>',
+  desktop: '<rect x="20" y="8" width="24" height="48" rx="3"/><circle cx="32" cy="22" r="5"/><path d="M26 44h12"/>',
+  graphics_card: '<rect x="6" y="18" width="52" height="28" rx="4"/><circle cx="22" cy="32" r="8"/><circle cx="42" cy="32" r="8"/>',
+  ssd: '<rect x="8" y="22" width="48" height="20" rx="3"/><path d="M16 32h14M44 30v4"/>',
+  hdd: '<rect x="14" y="8" width="36" height="48" rx="4"/><circle cx="32" cy="28" r="10"/><path d="M32 28l8 14"/>',
+};
+const iconSvg = (cat, size) => `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[cat] || ICONS.ssd}</svg>`;
+// 商品图：加载失败时换成品类图标
+function pic(d, size) {
+  if (!/^https:\/\//.test(d.image_url || "")) return iconSvg(d.category, size);
+  return `<img src="${esc(d.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-cat="${esc(d.category || "")}" data-size="${size}" onerror="this.outerHTML=iconSvg(this.dataset.cat,Number(this.dataset.size))">`;
+}
+function factsOf(d, opts = {}) {
+  return [opts.showCategory ? T.categories[d.category] : "", T.conditions[d.condition], d.quantity > 1 ? T.pack(d.quantity) : "", d.store,
+          SRC[d.source] || "", opts.found ? T.found(ago(d.created_at)) : ago(d.created_at)].filter(Boolean);
+}
+// 首页卡片
+function cardHtml(d) {
+  return `<a class="card-deal" href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">
+    <div class="pic">${pic(d, 88)}<span class="price-chip">${money(d.price)}</span></div>
+    <div class="body">
+      <span class="kicker">${d.pinned ? `<span class="pin">${esc(T.pinned)}</span> · ` : ""}${esc(T.categories[d.category] || "")}</span>
+      <span class="t">${esc(cleanTitle(d.title))}</span>
+      <span class="price-inline">${money(d.price)}</span>
+      <span class="meta">${esc(factsOf(d).join(" · "))}</span>
+    </div>
+  </a>`;
+}
+// 标签页的一行（从上到下排名）
+function rowHtml(d, i, opts) {
+  const perTb = d.per_tb != null;
+  const big = perTb ? T.perTbShort(money(d.per_tb, true)) : money(d.price);
+  const small = perTb ? T.total(money(d.price)) : "";
+  return `<a class="row ${i === 0 ? "first" : ""}" href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">
+    <span class="no ${i < 3 ? "hi" : ""}">${i + 1}</span>
+    <span class="thumb">${pic(d, 40)}</span>
+    <span class="info">
+      <span class="t">${esc(cleanTitle(d.title))}</span>
+      <span class="money-inline">${esc(big)}${small ? ` <small>${esc(small)}</small>` : ""}</span>
+      <span class="meta">${esc(factsOf(d, { found: true, showCategory: opts.showCategory }).join(" · "))}</span>
+    </span>
+    <span class="money"><span class="big">${esc(big)}</span>${small ? `<span class="small">${esc(small)}</span>` : ""}</span>
+  </a>`;
 }
 
 // 合并重复：同一商家、价格相差 2% 以内、标题相似的，只保留最新的一条
@@ -476,24 +615,48 @@ async function showHome() {
   if (featuredLoaded) return;
   featuredLoaded = true;
   $("featuredTitle").textContent = T.featured;
+  $("featuredNote").textContent = T.featuredNote;
   $("featured").innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
   const since = new Date(Date.now() - FEATURED_DAYS * 86400000).toISOString();
   try {
     const [rows, runs] = await Promise.all([
-      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=100`),
+      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at,image_url&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=100`),
       get(`runs?select=finished_at&order=finished_at.desc&limit=1`).catch(() => []),
     ]);
-    $("featured").innerHTML = rows.length ? rows.map(d => dealHtml(d, { showCategory: true })).join("")
+    $("featured").innerHTML = rows.length ? rows.map(cardHtml).join("")
       : `<div class="empty"><strong>${esc(T.featuredEmpty)}</strong>${esc(T.featuredEmptyHint)}</div>`;
-    $("status").textContent = runs.length ? T.lastCheck(ago(runs[0].finished_at)) : T.priceNote;
+    lastRun = runs.length ? runs[0].finished_at : null;
+    renderFacts();
+    renderCollage(rows);
   } catch (e) {
     featuredLoaded = false;
     $("featured").innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`;
   }
 }
+let lastRun = null;
+function renderFacts() {
+  const n = HOME.tags.filter(t => t.kind === "structured").length;
+  $("facts").innerHTML = [n ? `<span>${T.factsTags(n)}</span>` : "", lastRun ? `<span>${T.factsCheck(esc(ago(lastRun)))}</span>` : "",
+                          `<span class="src">${esc(T.factsSources)}</span>`].join("");
+}
+// 右边的拼贴图：用精选里前两个有图片的商品
+function renderCollage(rows) {
+  const big = d => ["laptop", "desktop", "graphics_card"].includes(d.category) ? 0 : 1;
+  const withImg = rows.filter(d => /^https:\/\//.test(d.image_url || "")).sort((a, b) => big(a) - big(b));
+  if (!withImg.length) return;
+  const [a, b] = withImg, cat = d => T.categories[d.category] || "";
+  $("collage").innerHTML = `<div class="stripes"></div>
+    <div class="card"><div class="img"><img src="${esc(a.image_url)}" alt="" referrerpolicy="no-referrer"></div>
+      <small>${esc(cat(a))}</small><strong>${esc(cleanTitle(a.title))}</strong></div>
+    <div class="bubble">${money(a.price)}</div>
+    ${b ? `<div class="mini"><img src="${esc(b.image_url)}" alt="" referrerpolicy="no-referrer"><span><small>${esc(cat(b))}</small><b>${money(b.price)}</b></span></div>` : ""}`;
+  $("collage").hidden = false;
+}
 function renderHotTags() {
-  $("hotTags").innerHTML = HOME.tags.filter(t => t.deals > 0 || t.heat > 0).slice(0, HOT_TAGS)
-    .map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("");
+  const tags = HOME.tags.filter(t => t.deals > 0 || t.heat > 0).slice(0, HOT_TAGS);
+  $("hotTags").innerHTML = (tags.length ? `<li class="lead">${esc(T.hotLead)}</li>` : "")
+    + tags.map(t => `<li><a href="?t=${encodeURIComponent(t.slug)}" data-slug="${esc(t.slug)}">${esc(tagName(t))}</a></li>`).join("");
+  renderFacts();
 }
 
 // ---------- 标签页 ----------
@@ -517,22 +680,21 @@ async function showTag(slug, query) {
   tagInput.value = name;
   const intro = !deals.length ? "" : tag.kind === "keyword" ? T.rankKeyword(deals.length) : tag.per_tb ? T.rankPerTb(deals.length) : T.rankTotal(deals.length);
   const isNew = Date.now() - new Date(tag.created_at || 0) < 2 * 86400000;
+  const eyebrow = [T.categories[tag.category] || "", tag.kind === "keyword" ? "" : tag.per_tb ? T.sortPerTb : T.sortTotal].filter(Boolean).join(" · ");
   body.innerHTML = `
-    <div class="tag-head"><h1>${esc(name)}</h1>${intro ? `<p>${esc(intro)}</p>` : ""}</div>
+    <div class="tag-head">${eyebrow ? `<span class="eyebrow">${esc(eyebrow)}</span>` : ""}<h1>${esc(name)}</h1>${intro ? `<p>${esc(intro)}</p>` : ""}</div>
     <form class="sub" id="subForm" novalidate>
-      <h2>${esc(T.subTitle(name))}</h2>
-      <div class="row">
-        <input type="email" name="email" placeholder="${esc(T.subEmail)}" aria-label="${esc(T.subEmail)}" autocomplete="email">
-        <button class="primary" type="submit">${esc(T.subBtn)}</button>
-      </div>
-      <div class="freq">
-        <label><input type="radio" name="frequency" value="daily" checked>${esc(T.subDaily)}</label>
-        <label><input type="radio" name="frequency" value="instant">${esc(T.subInstant)}</label>
-      </div>
+      <span class="label">${esc(T.subTitle)}</span>
+      <input type="email" name="email" placeholder="${esc(T.subEmail)}" aria-label="${esc(T.subEmail)}" autocomplete="email">
+      <fieldset class="seg"><legend class="sr">${esc(T.subFreq)}</legend>
+        <label><input type="radio" name="frequency" value="daily" checked><span>${esc(T.subDaily)}</span></label>
+        <label><input type="radio" name="frequency" value="instant"><span>${esc(T.subInstant)}</span></label>
+      </fieldset>
+      <button class="dark" type="submit">${esc(T.subBtn)}</button>
       <p class="msg" role="status" hidden></p>
     </form>
     ${deals.length
-      ? `<div class="ranked">${deals.map((d, i) => dealHtml(d, { rank: i + 1, found: true, showCategory: tag.kind === "keyword" })).join("")}</div>`
+      ? `<div class="rank-list">${deals.map((d, i) => rowHtml(d, i, { showCategory: tag.kind === "keyword" })).join("")}</div>`
       : `<div class="empty"><strong>${esc(T.tagEmpty)}</strong>${esc(tag.kind === "keyword" || isNew ? T.tagEmptyNew : T.tagEmptyOld)}</div>`}`;
   // 订阅：第一阶段只有界面。字段（邮箱、标签、频率）就是第二阶段要保存的内容
   $("subForm").addEventListener("submit", e => {
@@ -545,6 +707,11 @@ async function showTag(slug, query) {
 }
 
 // ---------- 启动 ----------
+$("heroTitle").innerHTML = `${esc(T.heroTitle[0])}<br><mark>${esc(T.heroTitle[1])}</mark>`;
+$("heroText").textContent = T.heroText;
+$("subHint").textContent = T.subHint;
+$("status").textContent = T.priceNote;
+$("subHint").addEventListener("click", () => { homeInput.placeholder = T.subHintMsg; homeInput.focus(); });
 const homeReady = rpc("public_home").then(d => { HOME = d; renderHotTags(); }).catch(() => {});
 const homeInput = mountSearch($("searchHome"), $("missHome"));
 const tagInput = mountSearch($("searchTag"), $("missTag"));

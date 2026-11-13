@@ -63,6 +63,36 @@ def _clean_link(link):
     return (link or "").split("?")[0]     # 去掉追踪参数，方便去重
 
 
+IMG_SRC = re.compile(r"<img[^>]+src=[\"']([^\"']+)[\"']", re.I)
+
+
+def _entry_image(e):
+    """帖子里的商品图：Slickdeals 写在正文的 <img> 里，Reddit 有时给 media_thumbnail。没有就返回 None"""
+    for t in e.get("media_thumbnail") or []:
+        url = t.get("url") or ""
+        if url.startswith("https://"):
+            return url.replace("&amp;", "&")
+    html = ""
+    if e.get("content"):
+        html = e["content"][0].get("value", "")
+    html = html or e.get("summary", "")
+    m = IMG_SRC.search(html or "")
+    if m and m.group(1).startswith("https://"):
+        return m.group(1).replace("&amp;", "&")
+    return None
+
+
+def _woot_image(o):
+    """Woot 商品图：列表里是 Photo，详情里是 Photos[0].Url"""
+    if isinstance(o.get("Photo"), str) and o["Photo"].startswith("https://"):
+        return o["Photo"]
+    for ph in o.get("Photos") or []:
+        url = ph.get("Url") if isinstance(ph, dict) else None
+        if url and url.startswith("https://"):
+            return url
+    return None
+
+
 def fetch_posts(sources):
     """返回 (帖子列表, 这次有相关结果的自动来源的 key)。
     自动来源 = 用户新建标签时自动加的 Slickdeals 搜索（sources 表里 auto = true）。
@@ -84,7 +114,7 @@ def fetch_posts(sources):
                 continue
             seen.add(link)
             if relevant or KEYWORDS.search(title):
-                items.append({"title": title, "url": link, "source": source})
+                items.append({"title": title, "url": link, "source": source, "image": _entry_image(e)})
     print(f"帖子：抓到 {len(seen)} 条，筛选后 {len(items)} 条")
     return items, hits
 
@@ -175,7 +205,7 @@ def fetch_woot(sources):
         if sp.get("Minimum") is not None and sp.get("Minimum") == sp.get("Maximum"):
             cond = o.get("Condition") or "New"
             items.append({"title": f"{o['Title']} - {cond} - ${sp['Minimum']}",
-                          "url": _clean_link(o["Url"]), "source": "woot"})
+                          "url": _clean_link(o["Url"]), "source": "woot", "image": _woot_image(o)})
         else:
             variants.append(o)
 
@@ -192,11 +222,12 @@ def fetch_woot(sources):
             continue
         for offer in details:
             base = _clean_link(offer.get("Url") or "")
+            image = _woot_image(offer) or _woot_image(next((o for o in chunk if o.get("OfferId") == offer.get("Id")), {}))
             for n, it in enumerate(offer.get("Items") or []):
                 if it.get("IsSoldOut") or it.get("SalePrice") is None:
                     continue
                 attrs = ", ".join(str(a.get("Value")) for a in it.get("Attributes") or [] if a.get("Value"))
                 items.append({"title": f"{offer.get('Title')} ({attrs}) - ${it['SalePrice']}",
-                              "url": f"{base}#item-{n + 1}", "source": "woot"})
+                              "url": f"{base}#item-{n + 1}", "source": "woot", "image": image})
     print(f"Woot：{len(offers)} 个商品，关键词粗筛后 {len(relevant)} 个，展开规格后 {len(items)} 条")
     return items
