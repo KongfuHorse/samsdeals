@@ -1,4 +1,4 @@
-# Deal 筛选网站 Demo
+# Subdeals
 
 每 30 分钟自动抓取 Slickdeals、r/buildapcsales、Woot（官方 API），以及 Tom's Hardware 和 TechRadar 的 deal 文章，用 AI 读出商品信息，按你的价格规则筛选。
 达标的 deal 显示在网站上；每天早上自动生成一封 MailerLite 邮件草稿，你检查后手动发送。

@@ -80,7 +80,7 @@ def build_html(deals, date_text):
   <tr><td style="padding:0 4px 28px;">
     <table cellpadding="0" cellspacing="0"><tr>
       <td style="background:{SEAL};color:#ffffff;font:900 12px/1.05 'Songti SC','Noto Serif SC',serif;padding:5px 6px;border-radius:4px;text-align:center;">精<br>选</td>
-      <td style="padding-left:10px;font:700 17px {FONT};color:{INK};">Sam's Deals</td>
+      <td style="padding-left:10px;font:700 17px {FONT};color:{INK};">Subdeals</td>
     </tr></table>
   </td></tr>
   <tr><td style="padding:0 4px 8px;">
