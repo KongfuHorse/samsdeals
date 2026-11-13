@@ -348,7 +348,8 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 begin
   perform _admin_check(p_token);
   return jsonb_build_object(
-    'tags', (select coalesce(jsonb_agg(to_jsonb(t) || jsonb_build_object('subscribers', 0,
+    'tags', (select coalesce(jsonb_agg(to_jsonb(t) || jsonb_build_object(
+                      'subscribers', (select count(*) from subscriptions x where x.tag_id = t.id and x.status = 'active'),
                       'merged_into_name', (select name_zh from tags m where m.id = t.merged_into))
                     order by t.merged_into nulls first, t.approved, t.visitors desc, t.id desc), '[]') from _tags_with_stats() t),
     'synonyms', (select coalesce(jsonb_agg(to_jsonb(s) order by s.category, s.term), '[]') from tag_synonyms s),
@@ -440,6 +441,10 @@ begin
   update tag_searches set tag_id = p_into where tag_id = p_from;
   update tag_ai_cache set tag_id = p_into where tag_id = p_from;
   update sources set tag_id = p_into where tag_id = p_from;
+  -- 订阅也搬过去（已经订了目标标签的就不重复）
+  update subscriptions s set tag_id = p_into where s.tag_id = p_from
+    and not exists (select 1 from subscriptions x where x.subscriber_id = s.subscriber_id and x.tag_id = p_into);
+  delete from subscriptions where tag_id = p_from;
   update tags set merged_into = p_into where merged_into = p_from;
   update tags set merged_into = p_into, approved = false where id = p_from;
 end $$;

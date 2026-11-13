@@ -13,6 +13,12 @@
 
 AI 新建标签需要两个保密变量，在 Supabase 后台 → Edge Functions → Secrets 里设置：`ANTHROPIC_API_KEY`（Claude key）和 `SB_SECRET_KEY`（Supabase 的 Secret key）。
 
+邮件订阅（Resend 发信）用 `supabase/functions/mail` 这个函数，还需要这些保密变量：`RESEND_API_KEY`（Resend key，只要发信权限）、`NOTIFY_KEY`（和数据库 settings.notify_key 一样）、`SUBSCRIBE_TEST_KEY`（测试用口令：网站订阅还没打开时带上它也能订阅）。
+- 订阅后先发确认邮件，点了才生效；每封邮件带"管理订阅"和"退订全部"（manage.html），退订全部会删除邮箱。
+- 马上通知：数据库每 10 分钟调用一次 notify，标签里出现排进前 3 名的新价格就发，每人每天最多 5 封。每天汇总：美东晚上 8 点。
+- 后台"订阅"页：网站订阅开关、发信额度、各标签订阅人数、最近发出的邮件。隐私政策在 privacy.html。
+- 每天的 MailerLite 草稿已经停用（email.yml 只保留手动运行）。
+
 ## 后台
 
 网址：**https://subdeals.net/admin.html**
@@ -25,7 +31,7 @@ AI 新建标签需要两个保密变量，在 Supabase 后台 → Edge Functions
 - 刷新设置：自动刷新间隔、立即刷新、最近运行记录、修改后台密码
 - "立即刷新"想马上生效，需要在后台填一个 GitHub 令牌（页面上有步骤）；不填也能用，最多等 10 分钟
 
-数据库设置：依次运行 schema.sql、schema_admin.sql（运行前把文件最后的 CHANGE_ME_PASSWORD 换成后台密码）、schema_cron.sql、schema_review.sql、schema_woot.sql、schema_manual.sql、schema_privacy.sql、schema_tags.sql、schema_images.sql。
+数据库设置：依次运行 schema.sql、schema_admin.sql（运行前把文件最后的 CHANGE_ME_PASSWORD 换成后台密码）、schema_cron.sql、schema_review.sql、schema_woot.sql、schema_manual.sql、schema_privacy.sql、schema_tags.sql、schema_images.sql、schema_subscribe.sql。
 
 定时：GitHub 自己的定时很不准（常常几小时才跑一次），所以由 Supabase 每 10 分钟检查一次，到了后台设的间隔就通知 GitHub 运行。抓取在你自己的电脑（自托管运行器）上执行，用家里的网络。
 
@@ -44,7 +50,9 @@ AI 新建标签需要两个保密变量，在 Supabase 后台 → Edge Functions
 | schema_privacy.sql | 公开接口不返回参考价；手动优惠可编辑 | 只运行一次 |
 | schema_tags.sql | 标签、搜索、价格排行、自动来源 | 只运行一次 |
 | schema_images.sql | 商品图片地址 | 只运行一次 |
+| schema_subscribe.sql | 邮件订阅：订阅人、订阅、发信记录、定时通知 | 只运行一次 |
 | supabase/functions/create-tag/ | AI 新建标签的服务器函数（Supabase Edge Function） | 改了以后要重新部署 |
+| supabase/functions/mail/ | 订阅、退订、发通知邮件的服务器函数 | 改了以后要重新部署 |
 | run.py | 主程序：抓取 → AI 解析 → 筛选 → 存库 | 不用改 |
 | sources.py | 抓取各类来源（来源列表在数据库 sources 表里） | 不用改 |
 | parser.py | AI 读标题 | 不用改 |

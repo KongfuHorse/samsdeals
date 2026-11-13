@@ -139,6 +139,7 @@
   <div class="tabs" id="tabs">
     <button data-tab="deals" class="on">优惠管理<span class="count hidden" id="reviewCount"></span></button>
     <button data-tab="tags">标签<span class="count hidden" id="tagCount"></span></button>
+    <button data-tab="subs">订阅</button>
     <button data-tab="rules">价格规则</button>
     <button data-tab="adjustments">调整规则</button>
     <button data-tab="options">下拉选项</button>
@@ -265,6 +266,45 @@
   </section>
 
   <!-- 价格规则 -->
+  <section id="tab-subs" class="hidden">
+    <div class="grid2">
+      <div class="card">
+        <h2>订阅概况</h2>
+        <div id="subStats" style="margin:10px 0 4px"></div>
+        <div class="muted small" id="subStatsNote"></div>
+      </div>
+      <div class="card">
+        <h2>发信额度</h2>
+        <div id="quotaBox" style="margin:10px 0 4px"></div>
+        <div class="muted small">Resend 免费版每天 100 封、每月 3,000 封（确认邮件也算）。到了上限就先停发，不会超额。</div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>订阅设置</h2>
+      <label class="small" style="display:flex; align-items:center; gap:8px; margin:10px 0 14px">
+        <span class="switch"><input type="checkbox" id="subEnabled"><span></span></span>
+        <span><b>网站订阅开关</b>：关着的时候，网站上点"订阅"只会提示"即将开放"，不会保存邮箱</span></label>
+      <div class="row">
+        <label class="small">每天汇总几点发（美东）<br><select id="subHour"></select></label>
+        <label class="small">马上通知每人每天最多<br><input id="subInstantMax" type="number" min="0" step="1" style="width:80px"> 封</label>
+        <label class="small">每天最多发<br><input id="subDaily" type="number" min="0" step="1" style="width:90px"> 封</label>
+        <label class="small">每 30 天最多发<br><input id="subMonthly" type="number" min="0" step="1" style="width:100px"> 封</label>
+        <label class="small" style="flex:1 1 220px">额度快用完时提醒这个邮箱<br><input id="subAdminEmail" type="email" style="width:100%" placeholder="可不填"></label>
+        <button class="primary" id="saveSubs">保存</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>各标签订阅人数</h2>
+        <div class="table-wrap"><table style="min-width:0"><thead><tr><th>标签</th><th>每天汇总</th><th>马上通知</th></tr></thead><tbody id="subByTag"></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2>最近发出的邮件</h2>
+        <ul class="dl" id="subLog"></ul>
+      </div>
+    </div>
+  </section>
+
   <section id="tab-rules" class="card hidden">
     <div class="toolbar">
       <div>
@@ -460,20 +500,52 @@ async function enterApp() {
   await reload();
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
 }
-let tagData = null;
+let tagData = null, subData = null;
 async function reload() {
-  [data, tagData] = await Promise.all([
+  [data, tagData, subData] = await Promise.all([
     rpc("admin_get_all", { p_token: token }),
     rpc("admin_tags_get", { p_token: token }).catch(() => null),
+    rpc("admin_sub_get", { p_token: token }).catch(() => null),
   ]);
   renderAll();
+  renderSubs();
 }
+
+// ---------- 订阅 ----------
+const MAIL_KINDS = { confirm: "确认邮件", instant: "马上通知", digest: "每天汇总", alert: "额度提醒" };
+for (let h = 0; h < 24; h++) $("subHour").insertAdjacentHTML("beforeend", `<option value="${h}">${h}:00</option>`);
+function renderSubs() {
+  if (!subData) { $("subStats").innerHTML = `<span class="muted">读不到订阅数据。请确认数据库已经运行过 schema_subscribe.sql。</span>`; return; }
+  const st = subData.stats, q = subData.quota, s = subData.settings;
+  $("subStats").innerHTML = `<span class="stat"><b>${st.subscribers}</b>订阅人</span><span class="stat"><b>${st.daily}</b>每天汇总</span>`
+    + `<span class="stat"><b>${st.instant}</b>马上通知</span><span class="stat"><b>${st.pending}</b>等待确认</span>`;
+  $("subStatsNote").textContent = s.subscribe_enabled ? "网站订阅：已打开" : "网站订阅：关闭中";
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const warn = (a, b) => pct(a, b) >= 80 ? ` class="reason"` : "";
+  $("quotaBox").innerHTML = `<span class="stat"><b${warn(q.day_used, q.day_limit)}>${q.day_used} / ${q.day_limit}</b>今天（UTC）</span>`
+    + `<span class="stat"><b${warn(q.month_used, q.month_limit)}>${q.month_used} / ${q.month_limit}</b>最近 30 天</span>`;
+  $("subEnabled").checked = !!s.subscribe_enabled; $("subHour").value = s.digest_hour; $("subInstantMax").value = s.instant_daily_max;
+  $("subDaily").value = s.email_daily_limit; $("subMonthly").value = s.email_monthly_limit; $("subAdminEmail").value = s.admin_email || "";
+  $("subByTag").innerHTML = subData.by_tag.map(x => `<tr><td><a href="./?t=${encodeURIComponent(x.slug)}" target="_blank" rel="noopener">${esc(x.tag)}</a></td><td>${x.daily}</td><td>${x.instant}</td></tr>`).join("")
+    || `<tr><td colspan="3" class="muted">还没有人订阅</td></tr>`;
+  $("subLog").innerHTML = subData.log.map(l => `<li><div class="t">${esc(MAIL_KINDS[l.kind] || l.kind)}：${esc(l.subject || "")}</div>
+      <div class="m"><span>${fmtTime(l.created_at)}</span>${l.ok ? "<span>已发出</span>" : `<span class="reason">没发出：${esc(l.error || "")}</span>`}</div></li>`).join("")
+    || `<li class="muted">还没有发过邮件</li>`;
+}
+$("saveSubs").addEventListener("click", async () => {
+  try {
+    await rpc("admin_sub_settings_save", { p_token: token, p_enabled: $("subEnabled").checked, p_daily: Number($("subDaily").value),
+      p_monthly: Number($("subMonthly").value), p_digest_hour: Number($("subHour").value), p_instant_max: Number($("subInstantMax").value),
+      p_admin_email: $("subAdminEmail").value.trim() });
+    toast("已保存"); await reload();
+  } catch (err) { toast("保存失败：" + err.message, true); }
+});
 
 // ---------- 标签 ----------
 $("tabs").addEventListener("click", e => {
   const tab = e.target.dataset.tab; if (!tab) return;
   [...$("tabs").children].forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
-  ["deals", "tags", "rules", "adjustments", "options", "sources", "refresh"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== tab));
+  ["deals", "tags", "subs", "rules", "adjustments", "options", "sources", "refresh"].forEach(t => $("tab-" + t).classList.toggle("hidden", t !== tab));
 });
 
 function optionsOf(field) { return data.options.filter(o => o.field === field && o.active); }

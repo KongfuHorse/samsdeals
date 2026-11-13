@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>管理订阅 · Subdeals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif:wght@700&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#FFFFFF; --ink:#1B1A2E; --muted:#4C4A63; --faint:#6B6985; --line:#E7E6EF; --line2:#EFEEF5; --band:#FAFAFD; --chip:#F3F2F8;
+    --accent:#4338CA; --btn:#4338CA; --hl:#E6E3FF; --bad:#B42318;
+    --sans:"Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --serif:"Noto Serif", "Noto Serif SC", "Songti SC", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#121220; --ink:#ECEBF5; --muted:#BDBBD2; --faint:#9A97B5; --line:#2A2940; --line2:#232236; --band:#17162A; --chip:#222138;
+      --accent:#ABA6FF; --btn:#5046E5; --hl:#2E2A5C; --bad:#F28B82;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 var(--sans); }
+  a { color:var(--accent); }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
+  [hidden] { display:none !important; }
+  .wrap { max-width:760px; margin:0 auto; padding:0 24px; }
+  .top { border-bottom:1px solid var(--line); }
+  .top .wrap { padding-top:16px; padding-bottom:16px; }
+  .logo { font-size:26px; letter-spacing:-.03em; line-height:1; color:var(--ink); text-decoration:none; }
+  .logo span { font-weight:500; } .logo b { font-weight:800; color:var(--accent); }
+  h1 { font:700 40px/1.2 var(--serif); margin:44px 0 10px; }
+  .lead { margin:0; font-size:17px; color:var(--muted); }
+  .note { margin:26px 0 0; padding:18px 22px; border-radius:16px; background:var(--hl); font-size:16px; }
+  .list { margin:28px 0 0; border:1px solid var(--line); border-radius:18px; overflow:hidden; }
+  .item { display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; padding:16px 20px; border-bottom:1px solid var(--line2); }
+  .item:last-child { border-bottom:0; }
+  .item .name { flex:1 1 200px; min-width:0; font-weight:600; font-size:17px; }
+  .item .name a { color:var(--ink); text-decoration:none; } .item .name a:hover { color:var(--accent); }
+  .item .wait { display:block; font-size:13px; font-weight:500; color:var(--faint); }
+  .seg { display:flex; background:var(--chip); border-radius:10px; padding:4px; border:0; margin:0; }
+  .seg label { position:relative; }
+  .seg input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; }
+  .seg span { display:flex; align-items:center; min-height:38px; padding:0 14px; border-radius:8px; font-size:14px; font-weight:600; white-space:nowrap; }
+  .seg input:checked + span { background:var(--btn); color:#fff; }
+  .seg input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
+  .ghost { border:1px solid var(--line); background:var(--bg); border-radius:10px; min-height:42px; padding:0 16px; font-weight:600; }
+  .ghost:hover { border-color:var(--faint); }
+  .danger { color:var(--bad); }
+  .actions { margin:26px 0 0; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .primary { display:inline-flex; align-items:center; border:0; border-radius:10px; background:var(--btn); color:#fff; font-weight:700; min-height:46px; padding:0 22px; text-decoration:none; }
+  .msg { font-size:14px; color:var(--muted); }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  footer { border-top:1px solid var(--line); margin-top:72px; }
+  footer .wrap { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 20px; padding-top:24px; padding-bottom:40px; font-size:14px; color:var(--faint); }
+  footer a { color:var(--faint); text-decoration:none; } footer a:hover { color:var(--accent); }
+  @media (max-width:640px) {
+    .wrap { padding:0 16px; }
+    h1 { font-size:30px; margin-top:28px; }
+    .item { padding:14px 16px; }
+    .seg { flex:1 1 100%; } .seg label { flex:1; } .seg span { justify-content:center; }
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap"><a class="logo" href="./" aria-label="Subdeals 首页"><span>sub</span><b>deals</b></a></div></header>
+<main class="wrap" id="main" aria-live="polite"><h1>管理订阅</h1><p class="lead">正在加载…</p></main>
+<footer><div class="wrap"><span>Subdeals · 价格以商家页面为准</span><span><a href="privacy.html">隐私政策</a> · <a href="mailto:hello@subdeals.net">hello@subdeals.net</a></span></div></footer>
+
+<script>
+const SUPABASE_URL = "https://pmjmexfueofdaubcumgk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_l02lU8RFOe5RwSkO-YasHw_MBTgd-av";   // 公开 key，可以放在网页里
+const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
+  ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY } : { apikey: SUPABASE_ANON_KEY };
+const FREQ = { daily: "每天汇总", instant: "马上通知" };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+async function rpc(fn, args) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { ...HEADERS, "Content-Type": "application/json" }, body: JSON.stringify(args || {}) });
+  const text = await r.text();
+  if (!r.ok) { let m = text; try { m = JSON.parse(text).message || text; } catch (e) {} throw new Error(m); }
+  return text ? JSON.parse(text) : null;
+}
+const main = $("main");
+const show = (title, lead, extra = "") => { main.innerHTML = `<h1>${esc(title)}</h1><p class="lead">${lead}</p>${extra}`; };
+const homeBtn = `<div class="actions"><a class="primary" href="./">回到首页</a></div>`;
+const params = new URLSearchParams(location.search);
+let key = params.get("k") || "";
+
+async function confirmLink(token) {
+  try {
+    const r = await rpc("public_sub_confirm", { p_token: token });
+    if (r && r.key) {
+      key = r.key;
+      history.replaceState({}, "", "?k=" + encodeURIComponent(key));      // 地址栏换成管理链接，确认链接不再留着
+      return renderManage(`订阅成功：「${esc(r.tag)}」。有新的好价，我们会发邮件告诉你。`);
+    }
+    show("确认没有成功", r && r.error === "expired" ? "这个确认链接已经过期了。请回到标签页重新订阅。" : "这个确认链接无效，或者已经用过了。如果你已经确认过，订阅已经生效。", homeBtn);
+  } catch (e) { show("出错了", "暂时连不上服务器，请稍后刷新页面再试。"); }
+}
+
+async function unsubscribeAll() {
+  try {
+    const ok = await rpc("public_sub_remove_all", { p_key: key });
+    history.replaceState({}, "", location.pathname);
+    show(ok ? "已经退订全部" : "已经退订了", ok ? "你的邮箱和所有订阅都已经从我们这里删除，以后不会再收到 Subdeals 的邮件。"
+      : "找不到这个订阅，可能之前已经退订了。", homeBtn);
+  } catch (e) { show("出错了", "暂时连不上服务器，请稍后刷新页面再试。"); }
+}
+
+async function renderManage(note) {
+  let d;
+  try { d = await rpc("public_sub_get", { p_key: key }); } catch (e) { return show("出错了", "暂时连不上服务器，请稍后刷新页面再试。"); }
+  if (!d) return show("找不到这个订阅", "可能已经退订了，或者链接不完整。", homeBtn);
+  if (!d.subs.length) return show("管理订阅", `${esc(d.email)} 现在没有订阅任何标签。`, homeBtn);
+  main.innerHTML = `<h1>管理订阅</h1><p class="lead">${esc(d.email)} 订阅了这些标签：</p>
+    ${note ? `<div class="note" role="status">${note}</div>` : ""}
+    <div class="list">${d.subs.map(s => `<div class="item" data-id="${s.id}">
+      <div class="name"><a href="./?t=${encodeURIComponent(s.slug)}">${esc(s.tag)}</a>${s.status === "pending" ? `<span class="wait">还没确认：请点确认邮件里的链接</span>` : ""}</div>
+      ${s.status === "active" ? `<fieldset class="seg"><legend class="sr">「${esc(s.tag)}」多久通知一次</legend>
+        <label><input type="radio" name="f${s.id}" value="daily" ${s.frequency === "daily" ? "checked" : ""}><span>每天汇总</span></label>
+        <label><input type="radio" name="f${s.id}" value="instant" ${s.frequency === "instant" ? "checked" : ""}><span>马上通知</span></label>
+      </fieldset>` : ""}
+      <button class="ghost danger" type="button" data-remove="${s.id}">退订</button>
+    </div>`).join("")}</div>
+    <div class="actions"><button class="ghost danger" type="button" id="allBtn">退订全部</button><span class="msg" id="msg" role="status"></span></div>
+    <p class="msg" style="margin-top:22px">马上通知：标签里出现排进前 3 名的新价格时发，每天最多 5 封。每天汇总：美东时间晚上 8 点，当天有新价格才发。</p>`;
+}
+
+main.addEventListener("change", async e => {
+  const r = e.target.closest("input[type=radio]"); if (!r) return;
+  const id = Number(r.closest(".item").dataset.id);
+  try { await rpc("public_sub_update", { p_key: key, p_id: id, p_frequency: r.value }); $("msg").textContent = `已改成「${FREQ[r.value]}」。`; }
+  catch (err) { $("msg").textContent = "保存失败了，请稍后再试。"; }
+});
+let armed = false;
+main.addEventListener("click", async e => {
+  const rm = e.target.closest("[data-remove]");
+  if (rm) {
+    rm.disabled = true;
+    try { await rpc("public_sub_remove", { p_key: key, p_id: Number(rm.dataset.remove) }); await renderManage("已退订这个标签。"); }
+    catch (err) { rm.disabled = false; $("msg").textContent = "退订失败了，请稍后再试。"; }
+    return;
+  }
+  if (e.target.id === "allBtn") {
+    if (!armed) { armed = true; e.target.textContent = "再点一次，确认退订全部"; return; }
+    await unsubscribeAll();
+  }
+});
+
+if (params.get("c")) confirmLink(params.get("c"));
+else if (key && params.get("unsubscribe") === "all") unsubscribeAll();
+else if (key) renderManage();
+else show("管理订阅", "请从 Subdeals 发给你的邮件里点\"管理订阅\"进来。", homeBtn);
+</script>
+</body>
+</html>

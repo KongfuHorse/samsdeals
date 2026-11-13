@@ -1,9 +1,8 @@
 name: 生成邮件草稿
 
+# 已停用定时：订阅邮件改用 Resend（supabase/functions/mail）。需要时还可以在 Actions 页面手动运行。
 on:
-  schedule:
-    - cron: "0 12 * * *"       # 每天 UTC 12:00 = 纽约早上 8 点（冬令时 7 点）
-  workflow_dispatch:            # 想马上生成草稿时，在 Actions 页面手动点 Run workflow
+  workflow_dispatch:
 
 jobs:
   draft:

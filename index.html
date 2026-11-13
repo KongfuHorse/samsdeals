@@ -129,6 +129,8 @@
   .seg input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
   .sub .dark { border:0; border-radius:10px; background:var(--ink); color:var(--bg); font-weight:700; padding:0 24px; min-height:48px; cursor:pointer; }
   .sub .msg { flex-basis:100%; margin:0; font-size:14px; }
+  .sub .fine { flex-basis:100%; margin:0; font-size:13px; color:var(--muted); }
+  .sub .fine a { color:var(--accent); text-decoration:underline; text-underline-offset:2px; }
 
   .rank-list { margin:30px 0 0; border:1px solid var(--line); border-radius:20px; overflow:hidden; }
   .row { display:flex; align-items:center; gap:18px; padding:16px 22px; border-bottom:1px solid var(--line2); }
@@ -159,6 +161,7 @@
   footer { border-top:1px solid var(--line); margin-top:64px; }
   footer .wrap { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 24px; padding-top:26px; padding-bottom:40px; font-size:14px; color:var(--faint); }
   footer a:hover { color:var(--accent); }
+  footer .links { display:flex; gap:20px; flex-wrap:wrap; }
 
   @media (max-width:760px) {
     .wrap { padding:0 16px; }
@@ -245,7 +248,7 @@
     </div>
   </div>
 
-  <footer><div class="wrap"><span id="status">&nbsp;</span><a href="mailto:hello@subdeals.net">hello@subdeals.net</a></div></footer>
+  <footer><div class="wrap"><span id="status">&nbsp;</span><span class="links"><a href="privacy.html">隐私政策</a><a href="mailto:hello@subdeals.net">hello@subdeals.net</a></span></div></footer>
 
 <script>
 // ===== 设置（只改这里）=====
@@ -313,6 +316,13 @@ const I18N = { zh: {
   subDaily: "每天汇总",
   subBtn: "订阅",
   subSoon: "订阅功能即将开放。我们现在不会保存你的邮箱，开放后请再来订阅。",
+  subSending: "正在提交…",
+  subSent: e => `确认邮件已经发到 ${e}，点里面的链接就订阅成功了。没收到的话，看看垃圾邮件。`,
+  subLimited: "提交太多次了，请明天再试。",
+  subQuota: "今天发的邮件太多了，请明天再试。",
+  subFailed: "订阅失败了，请稍后再试。",
+  subPrivacy: ["订阅即表示同意", "隐私政策", "。每封邮件都可以一键退订。"],
+  privacy: "隐私政策",
   subBadEmail: "请填写正确的邮箱。",
   pageTitle: name => `${name} 价格排行 · Subdeals`,
   homeTitle: "Subdeals · 电脑硬件好价，按型号排好",
@@ -695,17 +705,26 @@ async function showTag(slug, query) {
       </fieldset>
       <button class="dark" type="submit">${esc(T.subBtn)}</button>
       <p class="msg" role="status" hidden></p>
+      <p class="fine">${esc(T.subPrivacy[0])}<a href="privacy.html">${esc(T.subPrivacy[1])}</a>${esc(T.subPrivacy[2])}</p>
     </form>
     ${deals.length
       ? `<div class="rank-list">${deals.map((d, i) => rowHtml(d, i, { showCategory: tag.kind === "keyword" })).join("")}</div>`
       : `<div class="empty"><strong>${esc(T.tagEmpty)}</strong>${esc(tag.kind === "keyword" || isNew ? T.tagEmptyNew : T.tagEmptyOld)}</div>`}`;
-  // 订阅：第一阶段只有界面。字段（邮箱、标签、频率）就是第二阶段要保存的内容
-  $("subForm").addEventListener("submit", e => {
+  // 订阅：提交到服务器，服务器发确认邮件；网站订阅没打开时只提示"即将开放"
+  $("subForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const f = e.target, msg = f.querySelector(".msg");
+    const f = e.target, msg = f.querySelector(".msg"), btn = f.querySelector("button[type=submit]");
     const sub = { email: f.email.value.trim(), tag: tag.slug, frequency: f.frequency.value };
     msg.hidden = false;
-    msg.textContent = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sub.email) ? T.subSoon : T.subBadEmail;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(sub.email)) { msg.textContent = T.subBadEmail; return; }
+    btn.disabled = true; msg.textContent = T.subSending;
+    try {
+      const r = await fetch(`${SUPABASE_URL}/functions/v1/mail/subscribe`, { method: "POST", headers: { ...HEADERS, "Content-Type": "application/json" }, body: JSON.stringify(sub) });
+      const d = await r.json().catch(() => ({}));
+      msg.textContent = d.ok ? T.subSent(sub.email) : d.error === "closed" ? T.subSoon : d.error === "bad_email" ? T.subBadEmail
+        : d.error === "limited" ? T.subLimited : d.error === "quota" ? T.subQuota : T.subFailed;
+    } catch (err) { msg.textContent = T.subFailed; }
+    btn.disabled = false;
   });
 }
 
