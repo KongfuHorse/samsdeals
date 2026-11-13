@@ -12,7 +12,7 @@
 const SITE = "https://subdeals.net";
 const FROM = "Subdeals <deals@subdeals.net>";
 const REPLY_TO = "hello@subdeals.net";
-const ADDRESS = "K4V LLC · 539 W Commerce St Ste 1918, Dallas, TX 75208, USA";
+const ADDRESS = "Subdeals LLC · 539 W Commerce St, Dallas, TX 75208, USA";
 const FN_BASE = `${Deno.env.get("SUPABASE_URL")}/functions/v1/mail`;
 const CORS = {
   "Access-Control-Allow-Origin": "*",
