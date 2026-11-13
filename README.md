@@ -31,7 +31,7 @@ AI 新建标签需要两个保密变量，在 Supabase 后台 → Edge Functions
 - 刷新设置：自动刷新间隔、立即刷新、最近运行记录、修改后台密码
 - "立即刷新"想马上生效，需要在后台填一个 GitHub 令牌（页面上有步骤）；不填也能用，最多等 10 分钟
 
-数据库设置：依次运行 schema.sql、schema_admin.sql（运行前把文件最后的 CHANGE_ME_PASSWORD 换成后台密码）、schema_cron.sql、schema_review.sql、schema_woot.sql、schema_manual.sql、schema_privacy.sql、schema_tags.sql、schema_images.sql、schema_subscribe.sql。
+数据库设置：依次运行 schema.sql、schema_admin.sql（运行前把文件最后的 CHANGE_ME_PASSWORD 换成后台密码）、schema_cron.sql、schema_review.sql、schema_woot.sql、schema_manual.sql、schema_privacy.sql、schema_tags.sql、schema_images.sql、schema_subscribe.sql、schema_apple.sql、schema_apple_seed.sql。
 
 定时：GitHub 自己的定时很不准（常常几小时才跑一次），所以由 Supabase 每 10 分钟检查一次，到了后台设的间隔就通知 GitHub 运行。抓取在你自己的电脑（自托管运行器）上执行，用家里的网络。
 
@@ -51,6 +51,8 @@ AI 新建标签需要两个保密变量，在 Supabase 后台 → Edge Functions
 | schema_tags.sql | 标签、搜索、价格排行、自动来源 | 只运行一次 |
 | schema_images.sql | 商品图片地址 | 只运行一次 |
 | schema_subscribe.sql | 邮件订阅：订阅人、订阅、发信记录、定时通知 | 只运行一次 |
+| schema_apple.sql、schema_apple_seed.sql | 苹果标签：按产品线、尺寸、芯片分 | 只运行一次 |
+| apple_models.py | 苹果型号表（标签、AI 解析都用它）。改了以后重新生成 schema_apple_seed.sql 并运行 | 需要时改 |
 | supabase/functions/create-tag/ | AI 新建标签的服务器函数（Supabase Edge Function） | 改了以后要重新部署 |
 | supabase/functions/mail/ | 订阅、退订、发通知邮件的服务器函数 | 改了以后要重新部署 |
 | run.py | 主程序：抓取 → AI 解析 → 筛选 → 存库 | 不用改 |
