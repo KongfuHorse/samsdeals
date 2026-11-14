@@ -1,0 +1,58 @@
+name: SEO pages
+
+# 每 6 小时重新生成一次给 Google 收录的静态页（/zh/、/en/ 和每个标签页），以及 sitemap.xml
+# index.html 或生成脚本改了以后也会马上重新生成
+on:
+  schedule:
+    - cron: "41 */6 * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: [index.html, seo/**]
+
+concurrency:
+  group: seo-pages
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Build pages
+        run: |
+          python3 -m http.server 8080 >/dev/null 2>&1 &
+          sleep 2
+          node seo/build.mjs
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A zh en sitemap.xml
+          if git diff --cached --quiet; then
+            echo "没有变化"
+            exit 0
+          fi
+          git commit -q -m "Update SEO pages [skip ci]"
+          git pull -q --rebase origin main
+          git push -q
+          # 让 GitHub Pages 重新发布（机器人推送有时不会自动触发）
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" >/dev/null || true
+        env:
+          GH_TOKEN: ${{ github.token }}

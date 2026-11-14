@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Subdeals · 精选电脑硬件优惠</title>
 <meta name="description" content="搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。">
+<base href="/">
+<link rel="canonical" id="seoCanonical" href="https://subdeals.net/">
+<link rel="alternate" hreflang="zh-Hans" id="seoZh" href="https://subdeals.net/zh/">
+<link rel="alternate" hreflang="en" id="seoEn" href="https://subdeals.net/en/">
+<link rel="alternate" hreflang="x-default" id="seoDefault" href="https://subdeals.net/">
+<meta property="og:site_name" content="Subdeals">
+<meta property="og:type" content="website">
+<meta property="og:title" id="ogTitle" content="Subdeals">
+<meta property="og:description" id="ogDesc" content="搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。">
+<meta property="og:url" id="ogUrl" content="https://subdeals.net/">
+<meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif:wght@700&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
@@ -272,7 +283,7 @@
   <!-- 首页 -->
   <div id="viewHome" hidden>
     <header class="top"><div class="wrap">
-      <a class="logo" href="./" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
+      <a class="logo" href="/" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
       <span class="spacer"></span>
       <nav class="lang"></nav>
     </div></header>
@@ -298,7 +309,7 @@
   <!-- 标签页 -->
   <div id="viewTag" hidden>
     <header class="top"><div class="wrap">
-      <a class="logo" href="./" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
+      <a class="logo" href="/" data-home aria-label="Subdeals"><span>sub</span><b>deals</b></a>
       <div class="search" id="searchTag"></div>
       <button class="hsub-toggle" type="button" id="hsubToggle" aria-expanded="false" aria-controls="hsub" hidden></button>
       <form class="hsub" id="hsub" novalidate hidden>
@@ -326,15 +337,18 @@ const HOT_TAGS = 10;           // 首页显示几个热门标签
 
 // 界面语言：网址里的 ?lang= 优先，然后是上次选的，最后看浏览器语言（中文显示中文，其他都显示英文）
 const PARAMS = new URLSearchParams(location.search);
+// 给 Google 收录的静态页：/zh/、/en/ 是首页，/zh/deals/标签/、/en/deals/标签/ 是标签页，网址本身决定语言
+const PATH_LANG = (location.pathname.match(/^\/(en|zh)(\/|$)/) || [])[1] || null;
 function pickLang() {
-  const q = PARAMS.get("lang");
+  const q = PARAMS.get("lang") || PATH_LANG;
   if (q === "zh" || q === "en") { try { localStorage.setItem("sd_lang", q); } catch (e) {} return q; }
   try { const s = localStorage.getItem("sd_lang"); if (s === "zh" || s === "en") return s; } catch (e) {}
   const prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
   return prefs.some(l => /^zh\b/i.test(l)) ? "zh" : "en";
 }
 const LANG = pickLang();
-const LANG_Q = PARAMS.has("lang") ? `lang=${LANG}` : "";      // 网址里带了语言的（比如英文邮件里的链接），换页时继续带着
+const LANG_Q = PARAMS.has("lang") || PATH_LANG ? `lang=${LANG}` : "";   // 网址里带了语言的（英文邮件里的链接、静态页），换页时继续带着
+const PRERENDER = !!window.__PRERENDER__;                         // 生成静态页时为 true：不记访客、不统计
 
 // 所有界面文字都放在这里
 const I18N = { zh: {
@@ -405,7 +419,9 @@ const I18N = { zh: {
   subPrivacy: ["订阅即表示同意", "隐私政策", "。每封邮件都可以一键退订。"],
   privacy: "隐私政策",
   subBadEmail: "请填写正确的邮箱。",
-  pageTitle: name => `${name} 价格排行 · Subdeals`,
+  pageTitle: name => `${name} 优惠价格排行（近 30 天）· Subdeals`,
+  tagMeta: (name, n, low) => n ? `${name}近 30 天的 ${n} 个优惠价格，从低到高排好，目前最低 ${low}。来自 Slickdeals、Woot 等优惠网站，自动更新。`
+    : `${name}的优惠价格排行。有新价格时自动更新，也可以订阅邮件提醒。`,
   homeTitle: "Subdeals · 电脑硬件好价，按型号排好",
   metaDesc: "搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。",
   categories: { apple:"苹果", laptop:"游戏本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
@@ -478,14 +494,16 @@ const I18N = { zh: {
   subPrivacy: ["By subscribing, you agree to our ", "Privacy Policy", ". Every email has a one-click unsubscribe link."],
   privacy: "Privacy Policy",
   subBadEmail: "Please enter a valid email.",
-  pageTitle: name => `${name} Prices · Subdeals`,
+  pageTitle: name => `${name} Deals: Lowest Prices in 30 Days · Subdeals`,
+  tagMeta: (name, n, low) => n ? `${n} recent deal${n > 1 ? "s" : ""} for ${name} from the last 30 days, ranked from lowest to highest price. Lowest now: ${low}. Updated automatically from Slickdeals, Woot and more.`
+    : `Price ranking for ${name} deals. Updated automatically when new prices show up, with email alerts.`,
   homeTitle: "Subdeals · PC hardware deals, ranked by model",
   metaDesc: "Search the PC hardware you care about and see recent prices ranked: gaming laptops, graphics cards, desktops, SSDs and hard drives.",
   categories: { apple:"Apple", laptop:"Gaming Laptop", desktop:"Desktop", graphics_card:"Graphics Card", ssd:"SSD", hdd:"HDD" },
   conditions: { new:"New", open_box:"Open box", refurb:"Refurbished", used:"Used" },
 } };
 const T = I18N[LANG];
-const PRIVACY_URL = "privacy.html" + (LANG_Q ? "?" + LANG_Q : "");
+const PRIVACY_URL = "/privacy.html" + (LANG_Q ? "?" + LANG_Q : "");
 const SRC = { slickdeals:"Slickdeals", reddit:"Reddit", tomshardware:"Tom's Hardware", techradar:"TechRadar", woot:"Woot" };
 const HEADERS = SUPABASE_ANON_KEY.startsWith("eyJ")
   ? { apikey: SUPABASE_ANON_KEY, Authorization: "Bearer " + SUPABASE_ANON_KEY }
@@ -531,6 +549,7 @@ async function rpc(fn, args) {
 // 访客编号：只用来统计"有多少不同的人搜过这个标签"，不含任何个人信息
 let visitor = null;
 function visitorId() {
+  if (PRERENDER) return null;
   if (visitor) return visitor;
   try { visitor = localStorage.getItem("sd_visitor"); } catch (e) {}
   if (!visitor) {
@@ -749,16 +768,48 @@ document.addEventListener("click", e => {
 
 // ---------- 页面切换 ----------
 const withLang = q => [q, LANG_Q].filter(Boolean).join("&");
-const tagHref = slug => "?" + withLang("t=" + encodeURIComponent(slug));
+// 有优惠的公开标签都有静态页（/语言/deals/标签/），其他的用 /?t=标签
+let SEO_SLUGS = null;
+const hasPage = slug => !!(SEO_SLUGS && SEO_SLUGS.has(slug));
+const pagePath = (lang, slug) => slug ? `/${lang}/deals/${encodeURIComponent(slug)}/` : `/${lang}/`;
+const tagHref = slug => hasPage(slug) ? pagePath(LANG, slug) : "/?" + withLang("t=" + encodeURIComponent(slug));
+const homeHref = () => LANG_Q ? pagePath(LANG) : "/";
+function currentSlug() {
+  const t = new URLSearchParams(location.search).get("t");
+  if (t) return t;
+  const m = location.pathname.match(/^\/(?:en|zh)\/deals\/([^/]+)\/?$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 function openTag(slug, query) {
   history.pushState({}, "", tagHref(slug));
   showTag(slug, query);
 }
-function goHome() { history.pushState({}, "", location.pathname + (LANG_Q ? "?" + LANG_Q : "")); showHome(); }
+function goHome() { history.pushState({}, "", homeHref()); showHome(); }
 window.addEventListener("popstate", route);
 function route() {
-  const slug = new URLSearchParams(location.search).get("t");
+  const slug = currentSlug();
   if (slug) showTag(slug, null); else showHome();
+}
+
+// 搜索引擎用的信息：标准网址、中英文对应网址、分享卡片标题和简介
+const SITE_URL = "https://subdeals.net";
+const ALT = { zh: $("seoZh"), en: $("seoEn"), x: $("seoDefault") };
+function setSeo(title, desc, slug) {
+  const page = slug ? hasPage(slug) : true;
+  const canon = slug ? (page ? pagePath(LANG, slug) : "/?t=" + encodeURIComponent(slug)) : (LANG_Q ? pagePath(LANG) : "/");
+  document.title = title;
+  document.querySelector('meta[name="description"]').content = desc;
+  $("seoCanonical").href = SITE_URL + canon;
+  ALT.zh.href = SITE_URL + pagePath("zh", slug);
+  ALT.en.href = SITE_URL + pagePath("en", slug);
+  ALT.x.href = SITE_URL + (slug ? pagePath("en", slug) : "/");
+  Object.values(ALT).forEach(l => { if (!page) l.remove(); else if (!l.isConnected) document.head.appendChild(l); });   // 没有静态页就不写对应网址
+  $("ogTitle").content = title; $("ogDesc").content = desc; $("ogUrl").content = SITE_URL + canon;
+  let robots = document.querySelector('meta[name="robots"]');
+  if (!page) {                                                    // 没有静态页的标签（还没有优惠）不让搜索引擎收录
+    if (!robots) { robots = document.createElement("meta"); robots.name = "robots"; document.head.appendChild(robots); }
+    robots.content = "noindex";
+  } else if (robots) robots.remove();
 }
 
 // ---------- 优惠条目 ----------
@@ -859,7 +910,7 @@ let featuredLoaded = false;
 async function showHome() {
   $("viewTag").hidden = true; $("viewHome").hidden = false; $("missHome").hidden = true;
   drawLang();
-  document.title = T.homeTitle;
+  setSeo(T.homeTitle, T.metaDesc, null);
   homeInput.value = "";
   if (featuredLoaded) return;
   featuredLoaded = true;
@@ -961,14 +1012,20 @@ async function showTag(slug, query) {
     await homeReady;
     const apple = appleMatch(slug.replace(/-/g, " "));     // 旧的苹果标签链接（比如 ?t=macbook-pro）：列出型号让人选
     if (apple) { body.innerHTML = `<div class="miss"></div>`; return showAppleChooser(slug.replace(/-/g, " "), apple, body.firstChild); }
-    body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="./" data-home>${esc(T.backHome)}</a></div>`;
+    body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="/" data-home>${esc(T.backHome)}</a></div>`;
     return;
   }
   // 过期的优惠排到最后（变灰、划线、不算名次），合并重复时优先留没过期的那条
   const ordered = [...data.deals.filter(d => !d.expired_at), ...data.deals.filter(d => d.expired_at)];
   const tag = data.tag, name = tagName(tag), deals = dedupe(mergeSame(ordered, data.merge_same !== false));
-  if (tag.slug !== slug) { history.replaceState({}, "", tagHref(tag.slug)); drawLang(); }   // 被合并的旧网址跳到新标签
-  document.title = T.pageTitle(name);
+  await homeReady;                                                   // 知道哪些标签有静态页之后再定网址
+  if (mine !== tagRequest) return;
+  if (tag.slug !== slug || (hasPage(tag.slug) && new URLSearchParams(location.search).get("t"))) {
+    history.replaceState({}, "", tagHref(tag.slug)); drawLang();     // 被合并的旧网址、旧的 ?t= 网址，换成新标签的网址
+  }
+  const live = deals.filter(d => !d.expired_at);
+  const low = live.length ? (tag.per_tb && live[0].per_tb != null ? T.perTbShort(money(live[0].per_tb, true)) : money(live[0].price)) : "";
+  setSeo(T.pageTitle(name), T.tagMeta(name, live.length, low), tag.slug);
   tagInput.value = name;
   const intro = !deals.length ? "" : tag.kind === "keyword" ? T.rankKeyword(deals.length) : tag.per_tb ? T.rankPerTb(deals.length) : T.rankTotal(deals.length);
   const isNew = Date.now() - new Date(tag.created_at || 0) < 2 * 86400000;
@@ -1046,26 +1103,29 @@ $("hsub").addEventListener("submit", e => {
 // ---------- 启动 ----------
 // 右上角切换语言：链接带上 ?lang=，打开后记住这个选择
 function drawLang() {
-  const q = new URLSearchParams(location.search);
-  q.delete("lang");
-  const html = [["zh", "中文"], ["en", "EN"]].map(([l, n]) => {
-    const u = new URLSearchParams(q); u.set("lang", l);
-    return `<a href="?${esc(u.toString())}" lang="${l === "zh" ? "zh-CN" : "en"}"${l === LANG ? ' aria-current="true"' : ""}>${n}</a>`;
-  }).join("<span>/</span>");
+  const slug = currentSlug();
+  const target = l => !slug || hasPage(slug) ? pagePath(l, slug) : `/?t=${encodeURIComponent(slug)}&lang=${l}`;
+  const html = [["zh", "中文"], ["en", "EN"]].map(([l, n]) =>
+    `<a href="${esc(target(l))}" hreflang="${l === "zh" ? "zh-Hans" : "en"}" lang="${l === "zh" ? "zh-CN" : "en"}"${l === LANG ? ' aria-current="true"' : ""}>${n}</a>`
+  ).join("<span>/</span>");
   document.querySelectorAll(".lang").forEach(el => { el.innerHTML = html; });
 }
 document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
 document.querySelector('meta[name="description"]').content = T.metaDesc;
 $("privacyLink").textContent = T.privacy;
 $("privacyLink").href = PRIVACY_URL;
-document.querySelectorAll("a[data-home]").forEach(a => { a.href = "./" + (LANG_Q ? "?" + LANG_Q : ""); });
+document.querySelectorAll("a[data-home]").forEach(a => { a.href = homeHref(); });
 drawLang();
 $("heroTitle").innerHTML = `${esc(T.heroTitle[0])}<br><mark>${esc(T.heroTitle[1])}</mark>`;
 $("heroText").textContent = T.heroText;
 $("hsubToggle").textContent = T.hsubToggle;
 $("hsubBtn").textContent = T.subBtn;
 $("status").textContent = T.priceNote;
-const homeReady = rpc("public_home").then(d => { HOME = d; renderHotTags(); }).catch(() => {});
+const homeReady = rpc("public_home").then(d => {
+  HOME = d;
+  SEO_SLUGS = new Set((d.tags || []).filter(t => t.deals > 0).map(t => t.slug));
+  renderHotTags(); drawLang();
+}).catch(() => {});
 const homeInput = mountSearch($("searchHome"), $("missHome"));
 const tagInput = mountSearch($("searchTag"), $("missTag"));
 route();

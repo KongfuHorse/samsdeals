@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Page not found · Subdeals</title>
+<style>
+  :root { --bg:#FFFFFF; --ink:#1B1A2E; --muted:#4C4A63; --accent:#4338CA; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121220; --ink:#ECEBF5; --muted:#BDBBD2; --accent:#ABA6FF; } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.7 "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:80px 16px; }
+  .logo { font-size:26px; letter-spacing:-.03em; color:var(--ink); text-decoration:none; } .logo b { color:var(--accent); }
+  p { color:var(--muted); } a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <a class="logo" href="/"><span>sub</span><b>deals</b></a>
+  <h1 id="h">Page not found</h1>
+  <p id="p">This page doesn't exist. <a href="/">Back to home</a></p>
+</main>
+<script>
+// 标签页的静态页还没生成（比如刚有优惠的新标签）：转到 /?t=标签，由网站直接显示
+(function () {
+  var m = location.pathname.match(/^\/(en|zh)\/deals\/([^\/]+)\/?$/);
+  if (m) { location.replace("/?t=" + m[2] + "&lang=" + m[1]); return; }
+  if (/^zh/i.test(navigator.language || "")) {
+    document.documentElement.lang = "zh-CN";
+    document.getElementById("h").textContent = "找不到这个页面";
+    document.getElementById("p").innerHTML = '这个页面不存在。<a href="/">回到首页</a>';
+  }
+})();
+</script>
+</body>
+</html>

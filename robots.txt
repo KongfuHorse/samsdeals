@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /admin.html
+Disallow: /manage.html
+Disallow: /supabase/
+Disallow: /*.py$
+Disallow: /*.sql$
+
+Sitemap: https://subdeals.net/sitemap.xml
