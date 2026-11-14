@@ -156,6 +156,8 @@
         <select id="reviewPct"></select></label>
       <label class="small" style="display:flex; align-items:center; gap:8px; padding-bottom:6px">
         <span class="switch"><input type="checkbox" id="reviewStore"><span></span></span>商家不明也送审（Slickdeals 和 Woot 除外）</label>
+      <label class="small" style="display:flex; align-items:center; gap:8px; padding-bottom:6px">
+        <span class="switch"><input type="checkbox" id="mergeSame"><span></span></span>同品牌、同型号、同价格的优惠自动合并（网站和邮件只显示一条）</label>
       <button class="primary" id="saveReview">保存</button>
     </div>
 
@@ -605,6 +607,7 @@ function renderDeals() {
   if (keepCond) $("mCondition").value = keepCond;
   $("reviewPct").innerHTML = [20, 30, 40, 50, 60, 70, 80].map(v => `<option value="${v}" ${v === st.review_discount_pct ? "selected" : ""}>${v}%</option>`).join("");
   $("reviewStore").checked = !!st.review_unknown_store;
+  $("mergeSame").checked = st.merge_same_deals !== false;
   const by = s => data.deals.filter(d => d.status === s);
   const fill = (id, nId, list, empty) => {
     $(id).innerHTML = list.length ? list.map(dealItem).join("") : `<li class="muted small" style="display:block">${empty}</li>`;
@@ -674,6 +677,7 @@ $("addManual").addEventListener("click", async () => {
 $("saveReview").addEventListener("click", async () => {
   try {
     await rpc("admin_save_review_settings", { p_token: token, p_discount_pct: Number($("reviewPct").value), p_unknown_store: $("reviewStore").checked });
+    await rpc("admin_save_merge_setting", { p_token: token, p_on: $("mergeSame").checked });
     toast("已保存，下次抓取开始生效"); await reload();
   } catch (e) { toast("保存失败：" + e.message, true); }
 });

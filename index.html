@@ -775,6 +775,32 @@ function similar(a, b) {
   let both = 0; for (const w of A) if (B.has(w)) both++;
   return both / (A.size + B.size - both);
 }
+// 同品牌、同型号、同价格（四舍五入到整美元）的 deal 只留一条：留排在前面的那条。后台可以关掉这条规则
+const MODEL_STOP = new Set(("graphics card video gpu desktop laptop gaming pc computer internal external ssd hdd hard drive new the with and or "
+  + "for of in on at w free shipping less plus after coupon code clip deal deals sale price prime amazon newegg walmart bestbuy best buy "
+  + "ebay woot bh b h microcenter micro center target costco").split(" "));
+function modelTokens(title) {
+  return new Set(String(title || "").toLowerCase().replace(/\$\s?[\d,]+(\.\d+)?/g, " ").replace(/[^a-z0-9]+/g, " ")
+    .split(" ").filter(w => w && !MODEL_STOP.has(w)));
+}
+const same = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").toLowerCase();
+function sameModel(a, b) {
+  if (!a.brand || !same(a.brand, b.brand)) return false;
+  if (!["category", "gpu", "apple_model", "condition"].every(k => same(a[k], b[k]))) return false;
+  if (Number(a.capacity_tb || 0) !== Number(b.capacity_tb || 0) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
+  const A = modelTokens(a.title), B = modelTokens(b.title);
+  const [small, big] = A.size <= B.size ? [A, B] : [B, A];
+  return small.size >= 2 && [...small].every(w => big.has(w));
+}
+function mergeSame(list, on) {
+  if (!on) return list;
+  const kept = [];
+  for (const d of list) {
+    if (!kept.some(k => Math.round(k.price) === Math.round(d.price) && sameModel(k, d))) kept.push(d);
+  }
+  return kept;
+}
+
 function dedupe(list) {
   const kept = [];
   for (const d of [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))) {
@@ -799,9 +825,9 @@ async function showHome() {
   const since = new Date(Date.now() - FEATURED_DAYS * 86400000).toISOString();
   try {
     const [rows, runs] = await Promise.all([
-      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at,image_url&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=100`),
+      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at,image_url,brand,gpu,apple_model,capacity_tb&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=100`),
       get(`runs?select=finished_at&order=finished_at.desc&limit=1`).catch(() => []),
-    ]);
+    ]).then(async ([rows, runs]) => { await homeReady; return [mergeSame(rows, HOME ? HOME.merge_same !== false : true), runs]; });
     $("featured").innerHTML = rows.length ? rows.map(cardHtml).join("")
       : `<div class="empty"><strong>${esc(T.featuredEmpty)}</strong>${esc(T.featuredEmptyHint)}</div>`;
     lastRun = runs.length ? runs[0].finished_at : null;
@@ -858,7 +884,7 @@ async function showTag(slug, query) {
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="./" data-home>${esc(T.backHome)}</a></div>`;
     return;
   }
-  const tag = data.tag, name = tagName(tag), deals = dedupe(data.deals);
+  const tag = data.tag, name = tagName(tag), deals = dedupe(mergeSame(data.deals, data.merge_same !== false));
   if (tag.slug !== slug) { history.replaceState({}, "", tagHref(tag.slug)); drawLang(); }   // 被合并的旧网址跳到新标签
   document.title = T.pageTitle(name);
   tagInput.value = name;

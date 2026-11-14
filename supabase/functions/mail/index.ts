@@ -141,7 +141,30 @@ function similar(a: string, b: string) {
   return both / (A.size + B.size - both);
 }
 type Deal = { title: string; url: string; source: string; store: string | null; price: number; condition: string | null;
-  created_at: string; image_url: string | null; per_tb: number | null; rank?: number };
+  created_at: string; image_url: string | null; per_tb: number | null; rank?: number;
+  brand?: string | null; gpu?: string | null; apple_model?: string | null; category?: string | null;
+  capacity_tb?: number | null; quantity?: number | null };
+// 同品牌、同型号、同价格（四舍五入到整美元）的 deal 只留一条（和网站一样，后台可以关）
+const MODEL_STOP = new Set(("graphics card video gpu desktop laptop gaming pc computer internal external ssd hdd hard drive new the with and or "
+  + "for of in on at w free shipping less plus after coupon code clip deal deals sale price prime amazon newegg walmart bestbuy best buy "
+  + "ebay woot bh b h microcenter micro center target costco").split(" "));
+const modelTokens = (title: string) => new Set(String(title || "").toLowerCase().replace(/\$\s?[\d,]+(\.\d+)?/g, " ")
+  .replace(/[^a-z0-9]+/g, " ").split(" ").filter((w) => w && !MODEL_STOP.has(w)));
+const same = (a: unknown, b: unknown) => String(a ?? "").toLowerCase() === String(b ?? "").toLowerCase();
+function sameModel(a: Deal, b: Deal) {
+  if (!a.brand || !same(a.brand, b.brand)) return false;
+  if (!(["category", "gpu", "apple_model", "condition"] as const).every((k) => same(a[k], b[k]))) return false;
+  if (Number(a.capacity_tb || 0) !== Number(b.capacity_tb || 0) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
+  const A = modelTokens(a.title), B = modelTokens(b.title);
+  const [small, big] = A.size <= B.size ? [A, B] : [B, A];
+  return small.size >= 2 && [...small].every((w) => big.has(w));
+}
+function mergeSame(list: Deal[], on: boolean) {
+  if (!on) return list;
+  const kept: Deal[] = [];
+  for (const d of list) if (!kept.some((k) => Math.round(k.price) === Math.round(d.price) && sameModel(k, d))) kept.push(d);
+  return kept;
+}
 function dedupe(list: Deal[]) {
   const kept: Deal[] = [];
   for (const d of [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))) {
@@ -304,7 +327,7 @@ async function notify(req: Request) {
   const lists = new Map<string, { deals: Deal[]; perTb: boolean }>();
   for (const slug of new Set(subs.map((s) => s.slug))) {
     const r = await rpc("public_tag_deals", { p_slug: slug });
-    lists.set(slug, { deals: r ? dedupe(r.deals || []) : [], perTb: !!r?.tag?.per_tb });
+    lists.set(slug, { deals: r ? dedupe(mergeSame(r.deals || [], r.merge_same !== false)) : [], perTb: !!r?.tag?.per_tb });
   }
 
   const sent: { id: number; url: string }[] = [];

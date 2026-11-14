@@ -54,7 +54,8 @@ begin
                    'github_repo', github_repo,
                    'review_discount_pct', review_discount_pct,
                    'review_unknown_store', review_unknown_store,
-                   'woot_midnight', woot_midnight) from settings where id = 1),
+                   'woot_midnight', woot_midnight,
+                   'merge_same_deals', merge_same_deals) from settings where id = 1),
     'runs', (select coalesce(jsonb_agg(x), '[]') from (select * from runs order by finished_at desc limit 10) x),
     'deal_stats', (select coalesce(jsonb_object_agg(status, n), '{}') from (select status, count(*) n from deals group by status) y),
     'deals', (select coalesce(jsonb_agg(d order by d.pinned desc, d.pinned_at desc nulls last, d.created_at desc), '[]') from (

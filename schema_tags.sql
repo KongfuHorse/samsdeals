@@ -192,7 +192,8 @@ returns jsonb language sql stable security definer set search_path = public as $
                                   and (x.conditions->>'apple_model' is null or d.apple_model = x.conditions->>'apple_model')) n
                    from _tags_with_stats() x where x.is_public) t),
     'synonyms', (select coalesce(jsonb_agg(jsonb_build_object('term', term, 'category', category)), '[]') from tag_synonyms),
-    'gpus', (select coalesce(jsonb_agg(value order by sort_order), '[]') from field_options where field = 'gpu' and active)
+    'gpus', (select coalesce(jsonb_agg(value order by sort_order), '[]') from field_options where field = 'gpu' and active),
+    'merge_same', (select merge_same_deals from settings where id = 1)
   );
 $$;
 
@@ -231,6 +232,7 @@ begin
     v_storage := t.conditions->>'category' in ('ssd', 'hdd');
     select coalesce(jsonb_agg(to_jsonb(x) - 'sort_key' order by x.sort_key nulls last, x.price), '[]') into v_deals from (
       select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at, d.image_url,
+             d.brand, d.gpu, d.apple_model,
              case when v_storage and d.capacity_tb > 0 then round(d.price / greatest(d.quantity, 1) / d.capacity_tb, 2) end as per_tb,
              case when v_storage then case when d.capacity_tb > 0 then d.price / greatest(d.quantity, 1) / d.capacity_tb end
                   else d.price end as sort_key
@@ -248,7 +250,7 @@ begin
     from jsonb_array_elements_text(coalesce(t.conditions->'keywords', '[]')) k;
     select coalesce(jsonb_agg(to_jsonb(x) order by x.price), '[]') into v_deals from (
       select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at, d.image_url,
-             null::numeric as per_tb
+             d.brand, d.gpu, d.apple_model, null::numeric as per_tb
       from deals d
       where d.created_at > now() - interval '30 days' and d.price is not null
         and d.status in ('passed', 'not_passed', 'no_rule', 'other')
@@ -261,7 +263,8 @@ begin
     'tag', jsonb_build_object('slug', t.slug, 'name', t.name_zh, 'name_en', t.name_en, 'kind', t.kind,
                               'in_scope', t.in_scope, 'per_tb', v_storage, 'is_public', v_public, 'created_at', t.created_at,
                               'category', t.conditions->>'category'),
-    'deals', v_deals);
+    'deals', v_deals,
+    'merge_same', (select merge_same_deals from settings where id = 1));
 end $$;
 
 -- 没有结果的搜索，记下来供后台统计
