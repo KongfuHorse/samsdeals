@@ -97,17 +97,31 @@
                       background:repeating-linear-gradient(115deg, var(--btn) 0 14px, #3730A3 14px 22px); }
   .collage .card { position:absolute; top:64px; right:56px; width:62%; height:290px; border-radius:26px; background:#fff; color:#1B1A2E;
                    box-shadow:0 24px 60px var(--shadow); padding:20px; display:flex; flex-direction:column; gap:10px; }
+  .collage .card:hover strong { color:#4338CA; }
   .collage .card .img { flex:1; min-height:0; background:#fff; border:1px solid #ECEBF3; border-radius:16px; display:flex; align-items:center; justify-content:center; padding:12px; }
   .collage .card img { max-width:100%; max-height:100%; object-fit:contain; }
   .collage .card small { font-size:13px; font-weight:600; color:#6B6985; }
   .collage .card strong { font-size:15px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
-  .collage .bubble { position:absolute; top:34px; right:36%; background:#E6E3FF; color:#4338CA; font-weight:800; font-size:20px; padding:10px 18px; border-radius:14px; }
+  .collage .bubble { position:absolute; top:-30px; left:50%; transform:translateX(-50%); white-space:nowrap; background:#E6E3FF; color:#4338CA; font-weight:800; font-size:20px; padding:10px 18px; border-radius:14px; }
   .collage .mini { position:absolute; bottom:0; left:0; width:240px; background:#fff; color:#1B1A2E; border-radius:18px; box-shadow:0 18px 44px var(--shadow);
                    padding:14px 16px; display:flex; gap:12px; align-items:center; }
   .collage .mini img { width:56px; height:56px; object-fit:contain; flex:none; }
   .collage .mini span { display:flex; flex-direction:column; min-width:0; }
   .collage .mini small { font-size:12px; color:#6B6985; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .collage .mini b { font-size:18px; }
+  .collage .mini:hover b { color:#4338CA; }
+  /* 轮播：左右箭头 + 切换动画 */
+  .collage .nav { position:absolute; top:187px; z-index:2; width:44px; height:44px; border-radius:50%; border:1px solid var(--line);
+                  background:var(--bg); color:var(--ink); box-shadow:0 8px 22px var(--shadow); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .collage .nav:hover { color:var(--accent); border-color:var(--accent); }
+  .collage .nav svg { width:18px; height:18px; }
+  .collage .prev { left:calc(38% - 78px); }
+  .collage .next { right:34px; }
+  .collage .enter-next { animation:slideNext .35s ease; }
+  .collage .enter-prev { animation:slidePrev .35s ease; }
+  @keyframes slideNext { from { opacity:0; transform:translateX(18px); } to { opacity:1; transform:none; } }
+  @keyframes slidePrev { from { opacity:0; transform:translateX(-18px); } to { opacity:1; transform:none; } }
+  @media (prefers-reduced-motion: reduce) { .collage .enter-next, .collage .enter-prev { animation:none; } }
 
   .facts-band { border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:var(--band); }
   .facts-band .wrap { display:flex; flex-wrap:wrap; justify-content:space-around; gap:10px 40px; padding-top:20px; padding-bottom:20px; font-size:15px; color:var(--muted); }
@@ -247,7 +261,7 @@
           <ul class="chips" id="hotTags"></ul>
           <div class="miss" id="missHome" hidden></div>
         </div>
-        <div class="collage" id="collage" aria-hidden="true" hidden></div>
+        <section class="collage" id="collage" aria-roledescription="carousel" hidden></section>
       </section>
     </div>
     <section class="facts-band"><div class="wrap" id="facts"></div></section>
@@ -324,6 +338,7 @@ const I18N = { zh: {
   loadError: "暂时读不到数据",
   loadErrorHint: "请稍后刷新页面。",
   pinned: "置顶",
+  carousel: "今日推荐轮播", prevDeal: "上一个优惠", nextDeal: "下一个优惠",
   from: s => `来自 ${s}`,
   pack: n => `${n} 件装`,
   perTb: p => `每 TB ${p}`,
@@ -395,6 +410,7 @@ const I18N = { zh: {
   loadError: "Can't load data right now",
   loadErrorHint: "Please refresh the page in a moment.",
   pinned: "Pinned",
+  carousel: "Today's picks slideshow", prevDeal: "Previous deal", nextDeal: "Next deal",
   from: s => `From ${s}`,
   pack: n => `${n}-pack`,
   perTb: p => `${p} per TB`,
@@ -844,18 +860,50 @@ function renderFacts() {
   $("facts").innerHTML = [n ? `<span>${T.factsTags(n)}</span>` : "", lastRun ? `<span>${T.factsCheck(esc(ago(lastRun)))}</span>` : "",
                           `<span class="src">${esc(T.factsSources)}</span>`].join("");
 }
-// 右边的拼贴图：用精选里前两个有图片的商品
+// 右边的轮播：精选里有图片的优惠，自动循环（鼠标放上去或键盘操作时暂停），左右箭头手动切换，点卡片打开优惠
+const CAROUSEL_MS = 4500;
+let slides = [], slideAt = 0, slideTimer = null, slidePaused = false;
 function renderCollage(rows) {
-  const big = d => ["laptop", "desktop", "graphics_card"].includes(d.category) ? 0 : 1;
-  const withImg = rows.filter(d => /^https:\/\//.test(d.image_url || "")).sort((a, b) => big(a) - big(b));
-  if (!withImg.length) return;
-  const [a, b] = withImg, cat = d => T.categories[d.category] || "";
-  $("collage").innerHTML = `<div class="stripes"></div>
-    <div class="card"><div class="img"><img src="${esc(a.image_url)}" alt="" referrerpolicy="no-referrer"></div>
-      <small>${esc(cat(a))}</small><strong>${esc(cleanTitle(a.title))}</strong></div>
-    <div class="bubble">${money(a.price)}</div>
-    ${b ? `<div class="mini"><img src="${esc(b.image_url)}" alt="" referrerpolicy="no-referrer"><span><small>${esc(cat(b))}</small><b>${money(b.price)}</b></span></div>` : ""}`;
-  $("collage").hidden = false;
+  slides = rows.filter(d => /^https:\/\//.test(d.image_url || ""));
+  if (!slides.length) return;
+  const box = $("collage");
+  const arrow = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+  box.setAttribute("aria-label", T.carousel);
+  box.innerHTML = `<div class="stripes"></div><div id="slideCard"></div><div id="slideMini"></div>
+    ${slides.length > 1 ? `<button class="nav prev" type="button" aria-label="${esc(T.prevDeal)}">${arrow("M15 18l-6-6 6-6")}</button>
+    <button class="nav next" type="button" aria-label="${esc(T.nextDeal)}">${arrow("M9 18l6-6-6-6")}</button>` : ""}`;
+  box.hidden = false;
+  if (slides.length > 1) {
+    box.querySelector(".prev").addEventListener("click", () => { showSlide(slideAt - 1, "prev"); restartSlides(); });
+    box.querySelector(".next").addEventListener("click", () => { showSlide(slideAt + 1, "next"); restartSlides(); });
+    box.addEventListener("mouseenter", () => { slidePaused = true; });
+    box.addEventListener("mouseleave", () => { slidePaused = false; });
+    box.addEventListener("focusin", () => { slidePaused = true; });
+    box.addEventListener("focusout", () => { slidePaused = false; });
+  }
+  showSlide(0);
+  restartSlides();
+}
+function showSlide(i, dir) {
+  const n = slides.length;
+  slideAt = ((i % n) + n) % n;
+  const a = slides[slideAt], b = n > 1 ? slides[(slideAt + 1) % n] : null, cat = d => T.categories[d.category] || "";
+  const anim = dir ? ` enter-${dir}` : "";
+  const link = d => `href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}"`;
+  $("slideCard").innerHTML = `<a class="card${anim}" ${link(a)}>
+      <span class="bubble">${money(a.price)}</span>
+      <div class="img"><img src="${esc(a.image_url)}" alt="" referrerpolicy="no-referrer"></div>
+      <small>${esc(cat(a))}</small><strong>${esc(cleanTitle(a.title))}</strong></a>`;
+  $("slideMini").innerHTML = b ? `<a class="mini${anim}" ${link(b)}><img src="${esc(b.image_url)}" alt="" referrerpolicy="no-referrer">
+      <span><small>${esc(cat(b))}</small><b>${money(b.price)}</b></span></a>` : "";
+  if (n > 2) { const img = new Image(); img.referrerPolicy = "no-referrer"; img.src = slides[(slideAt + 2) % n].image_url; }   // 先加载下一张
+}
+function restartSlides() {
+  clearInterval(slideTimer);
+  if (slides.length < 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;   // 系统设置了减少动画就不自动播放
+  slideTimer = setInterval(() => {
+    if (!slidePaused && !document.hidden && !$("viewHome").hidden) showSlide(slideAt + 1, "next");
+  }, CAROUSEL_MS);
 }
 function renderHotTags() {
   const tags = HOME.tags.filter(t => t.deals > 0 || t.heat > 0).slice(0, HOT_TAGS);
