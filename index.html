@@ -110,6 +110,15 @@
   .collage .mini small { font-size:12px; color:#6B6985; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .collage .mini b { font-size:18px; }
   .collage .mini:hover b { color:#4338CA; }
+  /* 左下角：后面的候选优惠叠成一摞，露出上边缘 */
+  .collage .stack { position:absolute; bottom:0; left:0; width:240px; }
+  .collage .card { z-index:1; }                                  /* 后面那几张藏到大卡片下面，只在左边露出来 */
+  .collage .stack .mini { position:relative; z-index:2; }
+  .collage .stack .back { position:absolute; inset:0; z-index:0; transform-origin:top center; box-shadow:0 10px 26px var(--shadow); pointer-events:none; }
+  .collage .stack .back > * { visibility:hidden; }
+  .collage .stack .back.d1 { transform:translateY(-14px) scale(.94); background:#F4F3FA; }
+  .collage .stack .back.d2 { transform:translateY(-27px) scale(.88); background:#E9E7F5; }
+  .collage .stack .back.d3 { transform:translateY(-39px) scale(.82); background:#DEDBEF; }
   /* 轮播：左右箭头 + 切换动画 */
   .collage .nav { position:absolute; top:187px; z-index:2; width:44px; height:44px; border-radius:50%; border:1px solid var(--line);
                   background:var(--bg); color:var(--ink); box-shadow:0 8px 22px var(--shadow); display:flex; align-items:center; justify-content:center; cursor:pointer; }
@@ -894,8 +903,12 @@ function showSlide(i, dir) {
       <span class="bubble">${money(a.price)}</span>
       <div class="img"><img src="${esc(a.image_url)}" alt="" referrerpolicy="no-referrer"></div>
       <small>${esc(cat(a))}</small><strong>${esc(cleanTitle(a.title))}</strong></a>`;
-  $("slideMini").innerHTML = b ? `<a class="mini${anim}" ${link(b)}><img src="${esc(b.image_url)}" alt="" referrerpolicy="no-referrer">
-      <span><small>${esc(cat(b))}</small><b>${money(b.price)}</b></span></a>` : "";
+  // 左下角：下一条在最前面，再后面的候选（最多再叠 3 张）露出上边缘
+  const inner = d => `<img src="${esc(d.image_url)}" alt="" referrerpolicy="no-referrer"><span><small>${esc(cat(d))}</small><b>${money(d.price)}</b></span>`;
+  const depth = Math.min(n - 2, 3);
+  const backs = Array.from({ length: Math.max(depth, 0) }, (_, k) => depth - k)
+    .map(k => `<div class="mini back d${k}" aria-hidden="true">${inner(slides[(slideAt + 1 + k) % n])}</div>`).join("");
+  $("slideMini").innerHTML = b ? `<div class="stack">${backs}<a class="mini${anim}" ${link(b)}>${inner(b)}</a></div>` : "";
   if (n > 2) { const img = new Image(); img.referrerPolicy = "no-referrer"; img.src = slides[(slideAt + 2) % n].image_url; }   // 先加载下一张
 }
 function restartSlides() {
