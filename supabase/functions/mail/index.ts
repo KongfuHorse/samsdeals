@@ -143,7 +143,7 @@ function similar(a: string, b: string) {
 type Deal = { title: string; url: string; source: string; store: string | null; price: number; condition: string | null;
   created_at: string; image_url: string | null; per_tb: number | null; rank?: number;
   brand?: string | null; gpu?: string | null; apple_model?: string | null; category?: string | null;
-  capacity_tb?: number | null; quantity?: number | null };
+  capacity_tb?: number | null; quantity?: number | null; expired_at?: string | null };
 // 同品牌、同型号、同价格（四舍五入到整美元）的 deal 只留一条（和网站一样，后台可以关）
 const MODEL_STOP = new Set(("graphics card video gpu desktop laptop gaming pc computer internal external ssd hdd hard drive new the with and or "
   + "for of in on at w free shipping less plus after coupon code clip deal deals sale price prime amazon newegg walmart bestbuy best buy "
@@ -327,7 +327,7 @@ async function notify(req: Request) {
   const lists = new Map<string, { deals: Deal[]; perTb: boolean }>();
   for (const slug of new Set(subs.map((s) => s.slug))) {
     const r = await rpc("public_tag_deals", { p_slug: slug });
-    lists.set(slug, { deals: r ? dedupe(mergeSame(r.deals || [], r.merge_same !== false)) : [], perTb: !!r?.tag?.per_tb });
+    lists.set(slug, { deals: r ? dedupe(mergeSame((r.deals || []).filter((d: Deal) => !d.expired_at), r.merge_same !== false)) : [], perTb: !!r?.tag?.per_tb });   // 过期的不发
   }
 
   const sent: { id: number; url: string }[] = [];

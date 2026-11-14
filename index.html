@@ -197,6 +197,15 @@
   .row .big { font-size:21px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
   .row.first .big { color:var(--accent); }
   .row .small { font-size:13px; color:var(--faint); white-space:nowrap; }
+  /* 过期的优惠：灰色、划线，左上角标"已过期" */
+  .row { position:relative; }
+  .row.expired { background:var(--tile); }
+  .row.expired .thumb { filter:grayscale(1); opacity:.55; }
+  .row.expired .t, .row.expired .big, .row.expired .money-inline { color:var(--faint); text-decoration:line-through; text-decoration-thickness:1.5px; }
+  .row.expired .meta, .row.expired .small { color:var(--faint); }
+  .row.expired:hover .t { color:var(--muted); }
+  .exp-badge { position:absolute; top:6px; left:10px; z-index:1; padding:2px 7px; border-radius:6px; background:#6B6985; color:#fff;
+               font-size:11px; font-weight:700; line-height:1.4; letter-spacing:.02em; text-transform:uppercase; }
 
   /* 搜索没有结果时的提示 */
   .miss { margin:18px 0 0; padding:18px 20px; border:1px solid var(--line); border-radius:16px; background:var(--band); max-width:620px; }
@@ -353,6 +362,7 @@ const I18N = { zh: {
   loadError: "暂时读不到数据",
   loadErrorHint: "请稍后刷新页面。",
   pinned: "置顶",
+  expired: "已过期",
   carousel: "今日推荐轮播", prevDeal: "上一个优惠", nextDeal: "下一个优惠",
   from: s => `来自 ${s}`,
   pack: n => `${n} 件装`,
@@ -425,6 +435,7 @@ const I18N = { zh: {
   loadError: "Can't load data right now",
   loadErrorHint: "Please refresh the page in a moment.",
   pinned: "Pinned",
+  expired: "Expired",
   carousel: "Today's picks slideshow", prevDeal: "Previous deal", nextDeal: "Next deal",
   from: s => `From ${s}`,
   pack: n => `${n}-pack`,
@@ -787,8 +798,10 @@ function rowHtml(d, i, opts) {
   const perTb = d.per_tb != null;
   const big = perTb ? T.perTbShort(money(d.per_tb, true)) : money(d.price);
   const small = perTb ? T.total(money(d.price)) : "";
-  return `<a class="row ${i === 0 ? "first" : ""}" href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">
-    <span class="no ${i < 3 ? "hi" : ""}">${i + 1}</span>
+  const gone = !!d.expired_at;
+  return `<a class="row ${gone ? "expired" : i === 0 ? "first" : ""}" href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">
+    ${gone ? `<span class="exp-badge">${esc(T.expired)}</span>` : ""}
+    <span class="no ${!gone && i < 3 ? "hi" : ""}">${gone ? "–" : i + 1}</span>
     <span class="thumb">${pic(d, 40)}</span>
     <span class="info">
       <span class="t">${esc(cleanTitle(d.title))}</span>
@@ -856,7 +869,7 @@ async function showHome() {
   const since = new Date(Date.now() - FEATURED_DAYS * 86400000).toISOString();
   try {
     const [rows, runs] = await Promise.all([
-      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at,image_url,brand,gpu,apple_model,capacity_tb&status=eq.passed&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=100`),
+      get(`deals?select=title,url,source,price,category,condition,quantity,store,created_at,pinned,pinned_at,image_url,brand,gpu,apple_model,capacity_tb&status=eq.passed&expired_at=is.null&or=(created_at.gte.${since},pinned.is.true)&order=pinned.desc,pinned_at.desc.nullslast,created_at.desc&limit=100`),
       get(`runs?select=finished_at&order=finished_at.desc&limit=1`).catch(() => []),
     ]).then(async ([rows, runs]) => { await homeReady; return [mergeSame(rows, HOME ? HOME.merge_same !== false : true), runs]; });
     $("featured").innerHTML = rows.length ? rows.map(cardHtml).join("")
@@ -951,7 +964,9 @@ async function showTag(slug, query) {
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="./" data-home>${esc(T.backHome)}</a></div>`;
     return;
   }
-  const tag = data.tag, name = tagName(tag), deals = dedupe(mergeSame(data.deals, data.merge_same !== false));
+  // 过期的优惠排到最后（变灰、划线、不算名次），合并重复时优先留没过期的那条
+  const ordered = [...data.deals.filter(d => !d.expired_at), ...data.deals.filter(d => d.expired_at)];
+  const tag = data.tag, name = tagName(tag), deals = dedupe(mergeSame(ordered, data.merge_same !== false));
   if (tag.slug !== slug) { history.replaceState({}, "", tagHref(tag.slug)); drawLang(); }   // 被合并的旧网址跳到新标签
   document.title = T.pageTitle(name);
   tagInput.value = name;

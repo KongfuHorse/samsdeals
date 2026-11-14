@@ -60,7 +60,8 @@ begin
     'deal_stats', (select coalesce(jsonb_object_agg(status, n), '{}') from (select status, count(*) n from deals group by status) y),
     'deals', (select coalesce(jsonb_agg(d order by d.pinned desc, d.pinned_at desc nulls last, d.created_at desc), '[]') from (
                 select id, title, url, source, store, price, price_checked, threshold, category, gpu, capacity_tb,
-                       quantity, condition, status, adjustments_applied, created_at, emailed_at, pinned, pinned_at, image_url
+                       quantity, condition, status, adjustments_applied, created_at, emailed_at, pinned, pinned_at, image_url,
+                       expired_at
                 from deals
                 where status in ('review', 'passed', 'hidden')
                    or (status = 'removed' and created_at > now() - interval '30 days')

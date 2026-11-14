@@ -588,14 +588,16 @@ function dealItem(d) {
   const priceNote = hasStd
     ? `${hdd ? "每 TB " + usd(d.price_checked, true) + "，" : ""}价格线 ${hdd ? usd(d.threshold, true) : usd(d.threshold)}，低 ${pct}%`
     : "";
+  const expBtn = d.status === "passed"
+    ? `<button data-exp="${d.id}" data-on="${d.expired_at ? 0 : 1}">${d.expired_at ? "取消过期" : "过期"}</button>` : "";
   const pinBtn = manual && d.status === "passed"
     ? `<button data-pin="${d.id}" data-on="${d.pinned ? 0 : 1}">${d.pinned ? "取消置顶" : "置顶"}</button>` : "";
   const editBtn = manual && d.status !== "removed" ? `<button data-edit="${d.id}">编辑</button>` : "";
   return `<li>
     <div class="t"><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></div>
     <div class="p">${usd(d.price, true)}${priceNote ? `<small>${priceNote}</small>` : ""}</div>
-    <div class="m">${meta.map(x => `<span>${esc(x)}</span>`).join("")}${reason ? `<span class="reason">${esc(reason.replace("待审核：", "送审原因："))}</span>` : ""}</div>
-    <div class="a">${editBtn}${pinBtn}${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
+    <div class="m">${d.expired_at ? `<span class="reason">已过期</span>` : ""}${meta.map(x => `<span>${esc(x)}</span>`).join("")}${reason ? `<span class="reason">${esc(reason.replace("待审核：", "送审原因："))}</span>` : ""}</div>
+    <div class="a">${editBtn}${pinBtn}${expBtn}${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
   </li>`;
 }
 function renderDeals() {
@@ -626,6 +628,12 @@ $("tab-deals").addEventListener("click", async e => {
   if (st === "removed" && !confirm("删除后网站上不再显示，以后抓取也不会重新加回来。30 天内可以在\"最近删除\"里恢复。确定删除？")) return;
   b.disabled = true;
   try { await rpc("admin_set_deal_status", { p_token: token, p_id: Number(b.dataset.deal), p_status: st }); toast(DONE_TEXT[st]); await reload(); }
+  catch (err) { b.disabled = false; toast("操作失败：" + err.message, true); }
+});
+$("tab-deals").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-exp]"); if (!b) return;
+  const on = b.dataset.on === "1"; b.disabled = true;
+  try { await rpc("admin_set_deal_expired", { p_token: token, p_id: Number(b.dataset.exp), p_expired: on }); toast(on ? "已标为过期" : "已取消过期"); await reload(); }
   catch (err) { b.disabled = false; toast("操作失败：" + err.message, true); }
 });
 $("tab-deals").addEventListener("click", async e => {
