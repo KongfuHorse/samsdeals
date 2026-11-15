@@ -346,7 +346,7 @@
     <span class="info">
       <span class="t">Apple iPad Air 13" Wi-Fi with M3 Chip - 2nd Generation - app</span>
       <span class="money-inline">$544.91</span>
-      <span class="meta">全新 · Slickdeals · 12 小时前发现</span>
+      <span class="meta">全新 · Slickdeals · 13 小时前发现</span>
     </span>
     <span class="money"><span class="big">$544.91</span></span>
   </a></div></div>
@@ -1041,6 +1041,7 @@ async function showTag(slug, query) {
     const apple = appleMatch(slug.replace(/-/g, " "));     // 旧的苹果标签链接（比如 ?t=macbook-pro）：列出型号让人选
     if (apple) { body.innerHTML = `<div class="miss"></div>`; return showAppleChooser(slug.replace(/-/g, " "), apple, body.firstChild); }
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="/" data-home>${esc(T.backHome)}</a></div>`;
+    setSeo(`${T.tagNotFound} · Subdeals`, T.tagNotFoundHint, slug);   // 找不到的标签：不让搜索引擎收录
     return;
   }
   // 过期的优惠排到最后（变灰、划线、不算名次），合并重复时优先留没过期的那条

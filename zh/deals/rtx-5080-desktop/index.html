@@ -386,7 +386,7 @@
     <span class="info">
       <span class="t">MSI Aegis R2 AI Gaming Desktop: Intel Ultra 9 285, RTX 5080, 32GB DDR5, 1TB SSD</span>
       <span class="money-inline">$2,899.99</span>
-      <span class="meta">全新 · Costco · Slickdeals · 9 小时前发现</span>
+      <span class="meta">全新 · Costco · Slickdeals · 10 小时前发现</span>
     </span>
     <span class="money"><span class="big">$2,899.99</span></span>
   </a><a class="row " href="https://www.reddit.com/r/buildapcsales/comments/1xrvgc9/prebuilt_amd_ryzen_9_9900x_geforce_rtx_5080/" target="_blank" rel="noopener" title="[Prebuilt] AMD Ryzen 9 9900X - GeForce RTX 5080 - Windows 11 Home - 32GB RAM - 2TB SSD - $3200 (potential price drop on 11/16 to make it $2800, look at comments)">
@@ -1111,6 +1111,7 @@ async function showTag(slug, query) {
     const apple = appleMatch(slug.replace(/-/g, " "));     // 旧的苹果标签链接（比如 ?t=macbook-pro）：列出型号让人选
     if (apple) { body.innerHTML = `<div class="miss"></div>`; return showAppleChooser(slug.replace(/-/g, " "), apple, body.firstChild); }
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="/" data-home>${esc(T.backHome)}</a></div>`;
+    setSeo(`${T.tagNotFound} · Subdeals`, T.tagNotFoundHint, slug);   // 找不到的标签：不让搜索引擎收录
     return;
   }
   // 过期的优惠排到最后（变灰、划线、不算名次），合并重复时优先留没过期的那条

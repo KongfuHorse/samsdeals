@@ -356,7 +356,7 @@
     <span class="info">
       <span class="t">Apple Mac Mini Desktop: M4 Chip, 16GB RAM, 256GB SSD</span>
       <span class="money-inline">$629.99</span>
-      <span class="meta">全新 · Slickdeals · 9 天前发现</span>
+      <span class="meta">全新 · Slickdeals · 10 天前发现</span>
     </span>
     <span class="money"><span class="big">$629.99</span></span>
   </a><a class="row " href="https://www.techradar.com/pro/i-still-think-the-mac-mini-m4-is-the-best-small-form-factor-pc-in-the-world-and-its-usd150-off-at-best-buy#apple-mac-mini-m4-16gb-ram-256gb-ssd" target="_blank" rel="noopener" title="Apple Mac mini M4, 16GB RAM, 256GB SSD">
@@ -1121,6 +1121,7 @@ async function showTag(slug, query) {
     const apple = appleMatch(slug.replace(/-/g, " "));     // 旧的苹果标签链接（比如 ?t=macbook-pro）：列出型号让人选
     if (apple) { body.innerHTML = `<div class="miss"></div>`; return showAppleChooser(slug.replace(/-/g, " "), apple, body.firstChild); }
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="/" data-home>${esc(T.backHome)}</a></div>`;
+    setSeo(`${T.tagNotFound} · Subdeals`, T.tagNotFoundHint, slug);   // 找不到的标签：不让搜索引擎收录
     return;
   }
   // 过期的优惠排到最后（变灰、划线、不算名次），合并重复时优先留没过期的那条

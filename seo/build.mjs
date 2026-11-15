@@ -44,7 +44,7 @@ async function render(page, job) {
   } else {
     await page.waitForFunction(() => document.querySelector("#featured .card-deal, #featured .empty") && document.querySelector("#hotTags li"), null, { timeout: 30000 });
   }
-  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(300);                                   // 不等图片和字体，内容到了就存
   return "<!DOCTYPE html>\n" + await page.evaluate(() => document.documentElement.outerHTML) + "\n";
 }
 async function worker() {

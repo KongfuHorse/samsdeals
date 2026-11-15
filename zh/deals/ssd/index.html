@@ -616,7 +616,7 @@
     <span class="info">
       <span class="t">Samsung 990 SSD 1TB PCIe 4.0 NVMe</span>
       <span class="money-inline">$189.99/TB <small>总价 $189.99</small></span>
-      <span class="meta">全新 · Amazon · Tom's Hardware · 12 小时前发现</span>
+      <span class="meta">全新 · Amazon · Tom's Hardware · 13 小时前发现</span>
     </span>
     <span class="money"><span class="big">$189.99/TB</span><span class="small">总价 $189.99</span></span>
   </a><a class="row " href="https://www.tomshardware.com/video-games/playstation/upgrade-your-ps5s-storage-for-gta-6s-digital-pre-load-with-these-ssd-storage-options-from-usd174-ultra-fast-drives-slot-into-the-m-2-expansion-slot-to-ready-your-console-for-gtas-huge-212gb-installation#wd-black-sn850x-2tb" target="_blank" rel="noopener" title="WD Black SN850X 2TB">
@@ -1431,6 +1431,7 @@ async function showTag(slug, query) {
     const apple = appleMatch(slug.replace(/-/g, " "));     // 旧的苹果标签链接（比如 ?t=macbook-pro）：列出型号让人选
     if (apple) { body.innerHTML = `<div class="miss"></div>`; return showAppleChooser(slug.replace(/-/g, " "), apple, body.firstChild); }
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="/" data-home>${esc(T.backHome)}</a></div>`;
+    setSeo(`${T.tagNotFound} · Subdeals`, T.tagNotFoundHint, slug);   // 找不到的标签：不让搜索引擎收录
     return;
   }
   // 过期的优惠排到最后（变灰、划线、不算名次），合并重复时优先留没过期的那条

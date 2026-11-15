@@ -295,7 +295,7 @@
       <input type="search" enterkeyhint="search" aria-label="Search" placeholder="e.g. 5090 laptop, 4TB SSD" maxlength="60" role="combobox" aria-expanded="false" aria-autocomplete="list">
       <button class="go" type="submit">Search</button>
     </form><ul class="suggest" role="listbox" hidden=""></ul></div>
-          <ul class="chips" id="hotTags"><li class="lead">Popular searches</li><li><a href="/en/deals/ssd/" data-slug="ssd">SSD</a></li><li><a href="/en/deals/rtx-5060-desktop/" data-slug="rtx-5060-desktop">RTX 5060 Desktop</a></li><li><a href="/en/deals/rtx-5090-laptop/" data-slug="rtx-5090-laptop">RTX 5090 Gaming Laptop</a></li><li><a href="/en/deals/laptop/" data-slug="laptop">Gaming Laptop</a></li><li><a href="/en/deals/hdd/" data-slug="hdd">HDD</a></li><li><a href="/en/deals/mba13-m5/" data-slug="mba13-m5">MacBook Air 13 M5</a></li><li><a href="/en/deals/4tb-ssd/" data-slug="4tb-ssd">4TB SSD</a></li><li><a href="/en/deals/desktop/" data-slug="desktop">Desktop</a></li><li><a href="/en/deals/rtx-5070-desktop/" data-slug="rtx-5070-desktop">RTX 5070 Desktop</a></li><li><a href="/en/deals/gpu/" data-slug="gpu">Graphics Card</a></li></ul>
+          <ul class="chips" id="hotTags"><li class="lead">Popular searches</li><li><a href="/en/deals/ssd/" data-slug="ssd">SSD</a></li><li><a href="/en/deals/rtx-5060-desktop/" data-slug="rtx-5060-desktop">RTX 5060 Desktop</a></li><li><a href="/en/deals/rtx-5090-laptop/" data-slug="rtx-5090-laptop">RTX 5090 Gaming Laptop</a></li><li><a href="/en/deals/laptop/" data-slug="laptop">Gaming Laptop</a></li><li><a href="/en/deals/hdd/" data-slug="hdd">HDD</a></li><li><a href="/en/deals/mba13-m5/" data-slug="mba13-m5">MacBook Air 13 M5</a></li><li><a href="/en/deals/desktop/" data-slug="desktop">Desktop</a></li><li><a href="/en/deals/rtx-5070-desktop/" data-slug="rtx-5070-desktop">RTX 5070 Desktop</a></li><li><a href="/en/deals/gpu/" data-slug="gpu">Graphics Card</a></li><li><a href="/en/deals/rtx-5070-ti-desktop/" data-slug="rtx-5070-ti-desktop">RTX 5070 Ti Desktop</a></li></ul>
           <div class="miss" id="missHome" hidden=""></div>
         </div>
         <section class="collage" id="collage" aria-roledescription="carousel" hidden=""></section>
@@ -1101,6 +1101,7 @@ async function showTag(slug, query) {
     const apple = appleMatch(slug.replace(/-/g, " "));     // 旧的苹果标签链接（比如 ?t=macbook-pro）：列出型号让人选
     if (apple) { body.innerHTML = `<div class="miss"></div>`; return showAppleChooser(slug.replace(/-/g, " "), apple, body.firstChild); }
     body.innerHTML = `<div class="empty"><strong>${esc(T.tagNotFound)}</strong>${esc(T.tagNotFoundHint)} <a href="/" data-home>${esc(T.backHome)}</a></div>`;
+    setSeo(`${T.tagNotFound} · Subdeals`, T.tagNotFoundHint, slug);   // 找不到的标签：不让搜索引擎收录
     return;
   }
   // 过期的优惠排到最后（变灰、划线、不算名次），合并重复时优先留没过期的那条
