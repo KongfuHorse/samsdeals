@@ -102,21 +102,31 @@ def _woot_image(o):
     return None
 
 
+def tag_match(title, cond):
+    """关键词标签怎么算匹配（和数据库里的 _kw_match 一样）：
+    标题满足任意一组关键词（一组里的词都要出现），并且不含任何排除词"""
+    text = (title or "").lower()
+    groups = cond.get("groups") or ([cond["keywords"]] if cond.get("keywords") else [])
+    if any(x and x.lower() in text for x in cond.get("exclude") or []):
+        return False
+    return any(g and all(k.lower() in text for k in g) for g in groups)
+
+
 def fetch_posts(sources):
     """返回 (帖子列表, 这次有相关结果的自动来源的 key)。
     自动来源 = 用户新建标签时自动加的 Slickdeals 搜索（sources 表里 auto = true）。
     它们的帖子不走关键词粗筛（否则 MacBook 这类不在品类里的标题会被丢掉），
-    改成只保留标题里包含这个标签全部关键词的帖子。"""
+    改成只保留标题符合这个标签关键词的帖子（见 tag_match）。"""
     items, seen, hits = [], set(), set()
     active = [s for s in sources if s["kind"] == "post_rss" and s["enabled"]]
     for src in sorted(active, key=lambda s: not s.get("auto")):       # 自动来源先处理，避免被别的来源去重掉
         source = source_label(src["key"])
-        auto, keywords = bool(src.get("auto")), [k.lower() for k in src.get("tag_keywords") or []]
+        auto, cond = bool(src.get("auto")), src.get("tag_cond") or {}
         for e in _parse(src["url"]):
             link, title = _clean_link(e.get("link")), (e.get("title") or "").strip()
             if not link or not title or _too_old(e):
                 continue
-            relevant = auto and keywords and all(k in title.lower() for k in keywords)
+            relevant = auto and tag_match(title, cond)
             if relevant:
                 hits.add(src["key"])
             if link in seen:

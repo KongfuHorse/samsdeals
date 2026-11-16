@@ -215,10 +215,26 @@ begin
   return v_slug;
 end $$;
 
+-- 关键词标签怎么算匹配：标题满足任意一组关键词（一组里的词都要出现），并且不含任何排除词
+-- conditions: {keywords: 第一组, groups: [[...], [...]], exclude: [...], sort: "newest"}；老标签只有 keywords
+create or replace function _kw_match(p_title text, p_cond jsonb)
+returns boolean language sql immutable as $$
+  select exists (
+      select 1 from jsonb_array_elements(case when jsonb_typeof(p_cond->'groups') = 'array' then p_cond->'groups'
+                                              when jsonb_typeof(p_cond->'keywords') = 'array' then jsonb_build_array(p_cond->'keywords')
+                                              else '[]'::jsonb end) g
+      where case when jsonb_typeof(g) = 'array' and jsonb_array_length(g) > 0
+                 then not exists (select 1 from jsonb_array_elements_text(g) k where position(lower(k) in lower(p_title)) = 0)
+                 else false end)
+    and not exists (
+      select 1 from jsonb_array_elements_text(case when jsonb_typeof(p_cond->'exclude') = 'array' then p_cond->'exclude' else '[]'::jsonb end) x
+      where position(lower(x) in lower(p_title)) > 0);
+$$;
+
 -- 标签页：标签信息 + 近 30 天的价格排行；同时记一次搜索
 create or replace function public_tag_deals(p_slug text, p_visitor text default null, p_query text default null)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare t tags%rowtype; v_storage boolean; v_deals jsonb; v_kw text[]; v_public boolean;
+declare t tags%rowtype; v_storage boolean; v_deals jsonb; v_newest boolean := false; v_public boolean;
 begin
   select * into t from tags where slug = p_slug;
   if not found then return null; end if;
@@ -246,23 +262,22 @@ begin
       order by sort_key nulls last limit 300) x;
   else
     v_storage := false;
-    select array_agg('%' || replace(replace(replace(k, '\', '\\'), '%', '\%'), '_', '\_') || '%') into v_kw
-    from jsonb_array_elements_text(coalesce(t.conditions->'keywords', '[]')) k;
-    select coalesce(jsonb_agg(to_jsonb(x) order by x.price), '[]') into v_deals from (
+    v_newest := t.conditions->>'sort' = 'newest';        -- 多个型号放在一起的标签：按发现时间从新到旧
+    select coalesce(jsonb_agg(to_jsonb(x) order by case when v_newest then x.created_at end desc nulls last, x.price), '[]') into v_deals from (
       select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at, d.image_url,
              d.brand, d.gpu, d.apple_model, d.expired_at, null::numeric as per_tb
       from deals d
       where d.created_at > now() - interval '30 days' and d.price is not null
         and d.status in ('passed', 'not_passed', 'no_rule', 'other')
-        and v_kw is not null and d.title ilike all (v_kw)
-      order by d.price limit 300) x;
+        and _kw_match(d.title, t.conditions)
+      order by case when v_newest then d.created_at end desc nulls last, d.price limit 300) x;
   end if;
 
   select is_public into v_public from _tags_with_stats() s where s.id = t.id;
   return jsonb_build_object(
     'tag', jsonb_build_object('slug', t.slug, 'name', t.name_zh, 'name_en', t.name_en, 'kind', t.kind,
                               'in_scope', t.in_scope, 'per_tb', v_storage, 'is_public', v_public, 'created_at', t.created_at,
-                              'category', t.conditions->>'category'),
+                              'category', t.conditions->>'category', 'sort', case when v_newest then 'newest' end),
     'deals', v_deals,
     'merge_same', (select merge_same_deals from settings where id = 1));
 end $$;
@@ -378,11 +393,34 @@ begin
   );
 end $$;
 
--- 新建或修改标签。p_tag: {id?, name_zh, name_en, aliases[], kind, category, gpu, capacity_tb, keywords[], approved}
+-- 新建或修改标签。p_tag: {id?, name_zh, name_en, aliases[], kind, category, gpu, capacity_tb, keywords[], groups[[]], exclude[], approved}
+-- 关键词标签：groups 是多组关键词（满足任意一组就算），exclude 是排除词；只传 keywords 时当成一组
+
+-- 关键词标签的自动来源：每组关键词一个 Slickdeals 搜索（改了关键词就重建）
+create or replace function _tag_sync_sources(p_id bigint)
+returns void language plpgsql security definer set search_path = public as $$
+declare t tags%rowtype; g jsonb; v_term text; v_seen text[] := '{}'; n int := 0;
+begin
+  select * into t from tags where id = p_id;
+  delete from sources where tag_id = p_id and auto;
+  if t.id is null or t.kind <> 'keyword' or t.merged_into is not null then return; end if;
+  for g in select * from jsonb_array_elements(coalesce(t.conditions->'groups', jsonb_build_array(t.conditions->'keywords'))) loop
+    select trim(both '+' from regexp_replace(lower(string_agg(k, ' ')), '[^a-z0-9]+', '+', 'g')) into v_term from jsonb_array_elements_text(g) k;
+    continue when v_term is null or length(v_term) < 2 or v_term = any (v_seen);
+    v_seen := v_seen || v_term; n := n + 1;
+    insert into sources (key, name, kind, url, enabled, sort_order, auto, tag_id)
+    values ('auto_tag_' || p_id || case when n > 1 then '_' || n else '' end, '自动：' || t.name_zh || case when n > 1 then ' ' || n else '' end, 'post_rss',
+            'https://slickdeals.net/newsearch.php?q=' || left(v_term, 60) || '&searcharea=deals&searchin=first&rss=1',
+            true, 1000, true, p_id)
+    on conflict (key) do nothing;
+  end loop;
+  perform _auto_sources_enforce();
+end $$;
+
 create or replace function admin_tag_save(p_token text, p_tag jsonb)
 returns bigint language plpgsql security definer set search_path = public as $$
 declare v_id bigint := nullif(p_tag->>'id', '')::bigint; v_created boolean; v_kind text := coalesce(nullif(p_tag->>'kind', ''), 'structured');
-        v_aliases text[]; v_kw text[]; v_cond jsonb; v_slug text; v_name text := trim(p_tag->>'name_zh');
+        v_aliases text[]; v_kw text[]; v_groups jsonb; v_ex jsonb; v_cond jsonb; v_slug text; v_name text := trim(p_tag->>'name_zh');
         v_cat text := p_tag->>'category'; v_gpu text := nullif(trim(p_tag->>'gpu'), ''); v_cap numeric := trim_scale(nullif(p_tag->>'capacity_tb', '')::numeric);
         v_apple text := nullif(trim(p_tag->>'apple_model'), '');
 begin
@@ -391,10 +429,20 @@ begin
   from jsonb_array_elements_text(coalesce(p_tag->'aliases', '[]')) a where trim(a) <> '';
 
   if v_kind = 'keyword' then
-    select array_agg(distinct lower(trim(k))) into v_kw from jsonb_array_elements_text(coalesce(p_tag->'keywords', '[]')) k where trim(k) <> '';
-    if v_kw is null then raise exception '请至少填一个关键词'; end if;
+    -- 每组：去空白、转小写、去重；空的组丢掉
+    select coalesce(jsonb_agg(x.g order by x.ord), '[]') into v_groups from (
+      select gs.ord, (select jsonb_agg(distinct lower(trim(k))) from jsonb_array_elements_text(gs.g) k where trim(k) <> '') g
+      from jsonb_array_elements(case when jsonb_typeof(p_tag->'groups') = 'array' and jsonb_array_length(p_tag->'groups') > 0
+                                     then p_tag->'groups' else jsonb_build_array(coalesce(p_tag->'keywords', '[]')) end) with ordinality gs(g, ord)
+      where jsonb_typeof(gs.g) = 'array') x where x.g is not null;
+    if jsonb_array_length(v_groups) = 0 then raise exception '请至少填一个关键词'; end if;
+    if jsonb_array_length(v_groups) > 12 then raise exception '关键词最多 12 组'; end if;
     if coalesce(v_name, '') = '' then raise exception '请填写标签名'; end if;
-    v_cond := jsonb_build_object('keywords', to_jsonb(v_kw));
+    select coalesce(jsonb_agg(distinct lower(trim(k))), '[]') into v_ex
+    from jsonb_array_elements_text(case when jsonb_typeof(p_tag->'exclude') = 'array' then p_tag->'exclude' else '[]'::jsonb end) k where trim(k) <> '';
+    v_cond := jsonb_build_object('keywords', v_groups->0);
+    if jsonb_array_length(v_groups) > 1 then v_cond := v_cond || jsonb_build_object('groups', v_groups, 'sort', 'newest'); end if;
+    if jsonb_array_length(v_ex) > 0 then v_cond := v_cond || jsonb_build_object('exclude', v_ex); end if;
     if v_id is null then
       v_slug := trim(both '-' from lower(regexp_replace(coalesce(nullif(trim(p_tag->>'name_en'), ''), v_name), '[^a-zA-Z0-9]+', '-', 'g')));
       if length(v_slug) < 2 or exists (select 1 from tags where slug = v_slug) then
@@ -403,6 +451,7 @@ begin
       insert into tags (slug, name_zh, name_en, aliases, kind, conditions, in_scope, created_by, approved)
       values (v_slug, v_name, nullif(trim(p_tag->>'name_en'), ''), v_aliases, 'keyword', v_cond, false, 'admin', coalesce((p_tag->>'approved')::boolean, true))
       returning id into v_id;
+      perform _tag_sync_sources(v_id);
       return v_id;
     end if;
   elsif v_cat = 'apple' then
@@ -447,6 +496,7 @@ begin
     approved = coalesce((p_tag->>'approved')::boolean, approved)
   where id = v_id;
   if not found then raise exception '找不到这个标签'; end if;
+  if v_kind = 'keyword' then perform _tag_sync_sources(v_id); end if;
   return v_id;
 end $$;
 

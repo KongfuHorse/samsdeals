@@ -120,7 +120,7 @@ def load_sources():
         tags = {t["id"]: t for t in _get("tags", {"select": "id,conditions", "id": f"in.({','.join(tag_ids)})"})}
         for s in sources:
             t = tags.get(s.get("tag_id"))
-            s["tag_keywords"] = (t or {}).get("conditions", {}).get("keywords") or []
+            s["tag_cond"] = (t or {}).get("conditions") or {}
     return sources
 
 

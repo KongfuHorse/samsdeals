@@ -70,11 +70,12 @@ const L = {
     cFooter: "如果不是你本人订阅的，忽略这封邮件就行。不点确认，我们不会再给你发邮件。",
     cText: (t: string, f: string, l: string) => `你在 Subdeals 订阅了${q(t)}（${f}）。\n打开这个链接确认订阅（7 天内有效）：\n${l}\n\n如果不是你本人订阅的，忽略这封邮件就行。`,
     iSubject1: (t: string, p: string) => `${q(t)}新进前 3 名：${p}`,
-    iSubjectN: (n: number) => `${n} 个标签有新的前 3 名`,
-    iIntro: "刚发现的新价格排进了你订阅的标签前 3 名：",
+    iSubjectNew: (t: string, p: string) => `${q(t)}有新优惠：${p}`,
+    iSubjectN: (n: number) => `${n} 个标签有新好价`,
+    iIntro: "你订阅的标签有刚发现的新好价：",
     dSubject: (names: string[]) => `今天的新优惠：${names.slice(0, 2).join("、")}${names.length > 2 ? ` 等 ${names.length} 个标签` : ""}`,
     dPre: (n: number) => `${n} 条新价格`,
-    dIntro: "这是你订阅的标签今天新发现的价格，名次是在近 30 天价格排行里的位置：",
+    dIntro: "这是你订阅的标签今天新发现的价格。标了名次的，是它在近 30 天价格排行里的位置：",
     dText: "今天新发现的价格：",
   },
   en: {
@@ -101,11 +102,12 @@ Prices can change. Check the store page before you buy. Reply to this email to r
     cFooter: "If you didn't sign up, you can ignore this email. We won't email you again unless you confirm.",
     cText: (t: string, f: string, l: string) => `You subscribed to ${qe(t)} on Subdeals (${f}).\nOpen this link to confirm (expires in 7 days):\n${l}\n\nIf you didn't sign up, you can ignore this email.`,
     iSubject1: (t: string, p: string) => `New top 3 for ${qe(t)}: ${p}`,
-    iSubjectN: (n: number) => `New top 3 deals in ${n} of your tags`,
-    iIntro: "New prices just made the top 3 in tags you follow:",
+    iSubjectNew: (t: string, p: string) => `New deal for ${qe(t)}: ${p}`,
+    iSubjectN: (n: number) => `New deals in ${n} of your tags`,
+    iIntro: "We just found new deals in tags you follow:",
     dSubject: (names: string[]) => `Today's new deals: ${names.slice(0, 2).join(", ")}${names.length > 2 ? ` and ${names.length - 2} more` : ""}`,
     dPre: (n: number) => `${n} new price${n > 1 ? "s" : ""}`,
-    dIntro: "Here are today's new prices for the tags you follow. The rank is the deal's place in the 30-day price ranking:",
+    dIntro: "Here are today's new prices for the tags you follow. Where a rank is shown, it is the deal's place in the 30-day price ranking:",
     dText: "Today's new prices:",
   },
 };
@@ -195,7 +197,7 @@ function layout(lang: Lang, o: { preheader: string; heading: string; intro: stri
 const btn = (lang: Lang, href: string, text: string) =>
   `<a href="${esc(href)}" style="display:inline-block;background:#4338CA;color:#FFFFFF;font:700 15px/1 ${L[lang].font};padding:14px 26px;border-radius:10px;text-decoration:none;">${esc(text)}</a>`;
 
-function dealRow(lang: Lang, d: Deal, perTbTag: boolean) {
+function dealRow(lang: Lang, d: Deal, perTbTag: boolean, noRank = false) {
   const T = L[lang], F = T.font;
   const big = perTbTag && d.per_tb != null ? `${money(d.per_tb, true)}/TB` : money(d.price);
   const small = perTbTag && d.per_tb != null ? T.total(money(d.price)) : "";
@@ -206,7 +208,7 @@ function dealRow(lang: Lang, d: Deal, perTbTag: boolean) {
   return `<tr>
 <td width="72" valign="top" style="padding:14px 0;border-top:1px solid #EFEEF5;">${img}</td>
 <td valign="top" style="padding:14px 10px;border-top:1px solid #EFEEF5;font-family:${F};">
-  <div style="font:700 12px/1.4 Arial,sans-serif;color:#4338CA;">${T.rank(d.rank!)}</div>
+  ${noRank ? "" : `<div style="font:700 12px/1.4 Arial,sans-serif;color:#4338CA;">${T.rank(d.rank!)}</div>`}
   <a href="${esc(d.url)}" style="font:600 15px/1.4 ${F};color:#1B1A2E;text-decoration:none;">${esc(cleanTitle(d.title))}</a>
   <div style="font:400 12px/1.6 ${F};color:#6B6985;">${esc(meta)}</div>
 </td>
@@ -219,19 +221,19 @@ function dealRow(lang: Lang, d: Deal, perTbTag: boolean) {
 const site = (lang: Lang, path: string) => `${SITE}/${path}${lang === "en" ? (path.includes("?") ? "&" : "?") + "lang=en" : ""}`;
 const tagUrl = (lang: Lang, slug: string) => site(lang, `?t=${encodeURIComponent(slug)}`);
 const manageUrl = (lang: Lang, key: string, all = false) => site(lang, `manage.html?k=${key}${all ? "&unsubscribe=all" : ""}`);
-function tagBlock(lang: Lang, tag: { tag: string; slug: string; perTb: boolean; deals: Deal[]; more?: number }) {
+function tagBlock(lang: Lang, tag: { tag: string; slug: string; perTb: boolean; newest?: boolean; deals: Deal[]; more?: number }) {
   const F = L[lang].font;
   return `<div style="padding:10px 0 4px;font:700 17px/1.4 ${F};color:#1B1A2E;">${esc(tag.tag)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${tag.deals.map((d) => dealRow(lang, d, tag.perTb)).join("")}</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${tag.deals.map((d) => dealRow(lang, d, tag.perTb, tag.newest)).join("")}</table>
 <div style="padding:8px 0 14px;font:600 14px/1.5 ${F};">
   <a href="${esc(tagUrl(lang, tag.slug))}" style="color:#4338CA;text-decoration:none;">${esc(L[lang].more(tag.more || 0))}</a></div>`;
 }
 function subFooter(lang: Lang, key: string, tags: string[]) {
   return `${L[lang].footer(esc(L[lang].list(tags)), esc(manageUrl(lang, key)), esc(manageUrl(lang, key, true)))}<br>${esc(ADDRESS)}`;
 }
-function textDeals(lang: Lang, t: { tag: string; slug: string; perTb: boolean; deals: Deal[] }) {
+function textDeals(lang: Lang, t: { tag: string; slug: string; perTb: boolean; newest?: boolean; deals: Deal[] }) {
   const T = L[lang];
-  return `${t.tag}\n` + t.deals.map((d) => `${T.textRank(d.rank!, t.perTb && d.per_tb != null ? T.textPerTb(money(d.per_tb, true), money(d.price)) : money(d.price), cleanTitle(d.title))}\n  ${d.url}`).join("\n")
+  return `${t.tag}\n` + t.deals.map((d) => t.newest ? `  ${money(d.price)}  ${cleanTitle(d.title)}\n  ${d.url}` : `${T.textRank(d.rank!, t.perTb && d.per_tb != null ? T.textPerTb(money(d.per_tb, true), money(d.price)) : money(d.price), cleanTitle(d.title))}\n  ${d.url}`).join("\n")
     + `\n  ${T.textFull}${tagUrl(lang, t.slug)}\n`;
 }
 const textFooter = (lang: Lang, key: string, tags: string[]) =>
@@ -324,10 +326,10 @@ async function notify(req: Request) {
   const digestDue = body.force_digest === true || (now.hour >= st.digest_hour && st.last_digest_date !== now.date);
 
   // 每个标签只查一次排行
-  const lists = new Map<string, { deals: Deal[]; perTb: boolean }>();
+  const lists = new Map<string, { deals: Deal[]; perTb: boolean; newest: boolean }>();   // newest = 多型号标签，按发现时间排，不显示名次
   for (const slug of new Set(subs.map((s) => s.slug))) {
     const r = await rpc("public_tag_deals", { p_slug: slug });
-    lists.set(slug, { deals: r ? dedupe(mergeSame((r.deals || []).filter((d: Deal) => !d.expired_at), r.merge_same !== false)) : [], perTb: !!r?.tag?.per_tb });   // 过期的不发
+    lists.set(slug, { deals: r ? dedupe(mergeSame((r.deals || []).filter((d: Deal) => !d.expired_at), r.merge_same !== false)) : [], perTb: !!r?.tag?.per_tb, newest: r?.tag?.sort === "newest" });   // 过期的不发
   }
 
   const sent: { id: number; url: string }[] = [];
@@ -344,12 +346,12 @@ async function notify(req: Request) {
       const R = lists.get(s.slug)!; const seen = new Set(s.sent);
       const deals = R.deals.slice(0, 3).filter((d) => new Date(d.created_at) > new Date(s.activated_at)
         && Date.now() - +new Date(d.created_at) < 2 * 86400000 && !seen.has(d.url));
-      return { s, tag: tagOf(lang, s), slug: s.slug, perTb: R.perTb, deals };
+      return { s, tag: tagOf(lang, s), slug: s.slug, perTb: R.perTb, newest: R.newest, deals };
     }).filter((x) => x.deals.length);
     if (instant.length && who.instant_today < st.instant_daily_max) {
       const first = instant[0].deals[0];
       const firstPrice = instant[0].perTb && first.per_tb != null ? `${money(first.per_tb, true)}/TB` : money(first.price);
-      const subject = instant.length === 1 ? T.iSubject1(instant[0].tag, firstPrice) : T.iSubjectN(instant.length);
+      const subject = instant.length === 1 ? (instant[0].newest ? T.iSubjectNew : T.iSubject1)(instant[0].tag, firstPrice) : T.iSubjectN(instant.length);
       mails.push({
         to: who.email, subject, headers: listHeaders(lang, who.key), log: { kind: "instant", subscriber_id: who.subscriber_id },
         html: layout(lang, { preheader: `${cleanTitle(first.title)} ${firstPrice}`, heading: esc(subject),
@@ -365,7 +367,7 @@ async function notify(req: Request) {
         const R = lists.get(s.slug)!; const seen = new Set(s.sent);
         const since = new Date(s.last_digest_at || s.activated_at);
         const fresh = R.deals.filter((d) => new Date(d.created_at) > since && !seen.has(d.url));
-        return { s, tag: tagOf(lang, s), slug: s.slug, perTb: R.perTb, deals: fresh.slice(0, 5), more: Math.max(0, fresh.length - 5), all: fresh };
+        return { s, tag: tagOf(lang, s), slug: s.slug, perTb: R.perTb, newest: R.newest, deals: fresh.slice(0, 5), more: Math.max(0, fresh.length - 5), all: fresh };
       }).filter((x) => x.deals.length);
       // 没有新价格的订阅：直接把"上次汇总时间"往后挪；有新价格的，发成功以后再挪
       for (const s of daily) if (!blocks.some((b) => b.s.id === s.id)) digested.push(s.id);

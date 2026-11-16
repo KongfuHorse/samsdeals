@@ -221,7 +221,10 @@
           <label class="small tg-s tg-pc">显卡<br><select id="tgGpu"></select></label>
           <label class="small tg-s tg-pc">容量 TB<br><input id="tgCap" type="number" min="0" step="0.5" style="width:90px" placeholder="不限"></label>
           <label class="small tg-s tg-apple">苹果型号<br><select id="tgApple"></select></label>
-          <label class="small tg-k" style="flex:1 1 220px">关键词（标题里都要包含，用英文逗号隔开）<br><input id="tgKw" style="width:100%" placeholder="macbook air, m4"></label>
+          <label class="small tg-k" style="flex:1 1 100%">关键词：一行一组，一组里用逗号隔开。标题包含某一组的全部词就算（多个型号就写多行）<br>
+            <textarea id="tgKw" rows="4" style="width:100%; font:inherit" placeholder="sony, a7&#10;sony, a9&#10;sony, alpha 1"></textarea></label>
+          <label class="small tg-k" style="flex:1 1 100%">排除词：标题里有其中任何一个就不算，用逗号隔开（可以不填）<br>
+            <input id="tgEx" style="width:100%" placeholder="lens, battery, case"></label>
         </div>
         <div class="row">
           <label class="small" style="flex:1 1 160px">显示名<br><input id="tgName" style="width:100%" placeholder="按品类和型号的可以不填"></label>
@@ -745,7 +748,10 @@ $("saveReview").addEventListener("click", async () => {
 const TAG_BY = { admin: "后台", rule: "规则", ai: "AI" };
 let tgEditing = null, tgMerging = null;
 function tagCond(t) {
-  if (t.kind === "keyword") return "标题包含：" + (t.conditions.keywords || []).join(" + ");
+  if (t.kind === "keyword") {
+    const groups = t.conditions.groups || [t.conditions.keywords || []], ex = t.conditions.exclude || [];
+    return "标题包含：" + groups.map(g => g.join(" + ")).join(" 或 ") + (ex.length ? "；排除：" + ex.join("、") : "");
+  }
   const c = t.conditions;
   if (c.apple_model) return "苹果，型号：" + ((tagData.options.find(o => o.field === "apple_model" && o.value === c.apple_model) || {}).label || c.apple_model);
   return [CAT_NAMES[c.category] || c.category, c.gpu, c.capacity_tb != null ? c.capacity_tb + "TB" : ""].filter(Boolean).join("，");
@@ -818,7 +824,8 @@ function tgOpenForm(t) {
   $("tgGpu").value = t && t.conditions.gpu ? t.conditions.gpu : "";
   $("tgCap").value = t && t.conditions.capacity_tb != null ? t.conditions.capacity_tb : "";
   if (t && t.conditions.apple_model) $("tgApple").value = t.conditions.apple_model;
-  $("tgKw").value = t && t.conditions.keywords ? t.conditions.keywords.join(", ") : "";
+  $("tgKw").value = t && t.kind === "keyword" ? (t.conditions.groups || [t.conditions.keywords || []]).map(g => g.join(", ")).join("\n") : "";
+  $("tgEx").value = t && t.conditions.exclude ? t.conditions.exclude.join(", ") : "";
   $("tgApproved").checked = t ? t.approved : true;
   tgFormMode(); $("tgForm").scrollIntoView({ behavior: "smooth", block: "center" });
 }
@@ -831,7 +838,7 @@ $("tgCancel").addEventListener("click", tgCloseForm);
 $("tgSave").addEventListener("click", async () => {
   const tag = { id: tgEditing, kind: $("tgKind").value, name_zh: $("tgName").value.trim(), name_en: $("tgNameEn").value.trim(),
                 aliases: splitList($("tgAliases").value), category: $("tgCat").value, gpu: $("tgGpu").value,
-                capacity_tb: $("tgCap").value, apple_model: $("tgCat").value === "apple" ? $("tgApple").value : "", keywords: splitList($("tgKw").value), approved: $("tgApproved").checked };
+                capacity_tb: $("tgCap").value, apple_model: $("tgCat").value === "apple" ? $("tgApple").value : "", groups: $("tgKw").value.split("\n").map(splitList).filter(g => g.length), exclude: splitList($("tgEx").value), approved: $("tgApproved").checked };
   try { await rpc("admin_tag_save", { p_token: token, p_tag: tag }); toast("已保存"); tgCloseForm(); await reload(); }
   catch (e) { toast("保存失败：" + e.message, true); }
 });
