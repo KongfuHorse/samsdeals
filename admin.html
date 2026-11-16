@@ -104,6 +104,9 @@
   .dl .p small { display:block; font-weight:400; color:var(--muted); font-size:12px; }
   .dl .a { grid-column:2; grid-row:2; display:flex; gap:6px; justify-content:flex-end; }
   .dl .st { font-weight:700; color:var(--muted); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 6px; }
+  .chips button { border-radius:999px; padding:4px 12px; font-size:13px; }
+  .chips button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
   .dl .st-passed { color:#15803D; } .dl .st-review { color:#B45309; } .dl .st-removed, .dl .st-hidden { color:#B91C1C; }
   .reason { color:var(--bad); }
   .count { display:inline-block; min-width:18px; padding:0 6px; margin-left:4px; border-radius:999px; background:var(--bad); color:#fff; font-size:11px; line-height:18px; text-align:center; }
@@ -195,7 +198,8 @@
     <div class="sub"><h3>最近删除</h3><span class="muted small">30 天内，可以恢复</span></div>
     <ul class="dl" id="listRemoved"></ul>
     <div class="sub"><h3>全部入库</h3><span class="muted small" id="nAll"></span></div>
-    <p class="muted small" style="margin:0 0 4px">抓到的所有优惠，不管有没有达标，按抓取时间从新到旧排列。</p>
+    <p class="muted small" style="margin:0 0 8px">抓到的所有优惠，不管有没有达标，按抓取时间从新到旧排列。</p>
+    <div class="chips" id="allFilter" role="group" aria-label="按状态筛选"></div>
     <ul class="dl" id="listAll"></ul>
     <div style="padding-top:12px"><button id="moreAll" class="hidden">再显示 50 条</button></div>
   </section>
@@ -612,7 +616,17 @@ function dealItem(d) {
 // 全部入库：只看，不操作。每次读 50 条
 const ALL_STATUS = { passed: "正在展示", review: "待审核", hidden: "已隐藏", removed: "已删除",
   not_passed: "没达标", no_rule: "没有规则", need_info: "缺信息", other: "不相关" };
-let allDeals = [], allTotal = 0;
+let allDeals = [], allTotal = 0, allStatus = null, allCounts = {};
+const ALL_ORDER = ["passed", "review", "hidden", "removed", "not_passed", "no_rule", "need_info", "other"];
+function drawAllFilter() {
+  const sum = Object.values(allCounts).reduce((a, b) => a + b, 0);
+  $("allFilter").innerHTML = [[null, "全部", sum], ...ALL_ORDER.filter(k => allCounts[k]).map(k => [k, ALL_STATUS[k], allCounts[k]])]
+    .map(([k, label, n]) => `<button type="button" data-st="${k || ""}" aria-pressed="${k === allStatus}">${esc(label)} ${n}</button>`).join("");
+}
+$("allFilter").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  allStatus = b.dataset.st || null; drawAllFilter(); loadAllDeals(true);
+});
 function allItem(d) {
   const meta = [fmtTime(d.created_at) + " 抓取", CAT_NAMES[d.category] || d.category, d.gpu, d.apple_model, COND_NAMES[d.condition],
                 d.store, d.source === "manual" ? "手动添加" : d.source].filter(Boolean);
@@ -626,8 +640,8 @@ async function loadAllDeals(reset) {
   if (reset) allDeals = [];
   $("moreAll").disabled = true;
   try {
-    const r = await rpc("admin_deals_all", { p_token: token, p_offset: allDeals.length, p_limit: 50 });
-    allDeals = allDeals.concat(r.deals); allTotal = r.total;
+    const r = await rpc("admin_deals_all", { p_token: token, p_offset: allDeals.length, p_limit: 50, p_status: allStatus });
+    allDeals = allDeals.concat(r.deals); allTotal = r.total; allCounts = r.counts || {}; drawAllFilter();
     $("listAll").innerHTML = allDeals.map(allItem).join("") || `<li class="muted">还没有</li>`;
     $("nAll").textContent = `共 ${allTotal} 条，已显示 ${allDeals.length} 条`;
     $("moreAll").classList.toggle("hidden", allDeals.length >= allTotal);
