@@ -310,7 +310,7 @@
     <button class="nav next" type="button" aria-label="下一个优惠"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button></section>
       </section>
     </div>
-    <section class="facts-band"><div class="wrap" id="facts"><span><b>120</b> 个型号标签</span><span>上次检查：<b>2 分钟前</b></span><span class="src">来源：Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar</span></div></section>
+    <section class="facts-band"><div class="wrap" id="facts"><span><b>120</b> 个型号标签</span><span>上次检查：<b>16 分钟前</b></span><span class="src">来源：Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar</span></div></section>
     <div class="wrap">
       <div class="sec-head"><h2 id="featuredTitle">今日精选</h2><span id="featuredNote">只放达到我们价格标准的</span></div>
       <main id="featured" class="grid" aria-live="polite"><a class="card-deal" href="https://www.reddit.com/r/buildapcsales/comments/1xvlofk/asus_prime_nvidia_geforce_rtx_5070_ti_16gb_119999/" target="_blank" rel="noopener" title="[ ASUS - PRIME NVIDIA GeForce RTX 5070 Ti 16GB] - $1,199.99 - @BestBuy">
@@ -430,6 +430,8 @@ const I18N = { zh: {
   lowestOf: name => `${name} · 最低`,
   sortPerTb: "按每 TB 价格排",
   sortTotal: "按总价排",
+  sortNewest: "按发现时间排",
+  rankNewest: n => `近 30 天的 ${n} 条相关优惠，包含多个型号，最新发现的排在前面。`,
   total: p => `总价 ${p}`,
   perTbShort: p => `${p}/TB`,
   featuredEmpty: "现在没有精选推荐",
@@ -505,6 +507,8 @@ const I18N = { zh: {
   lowestOf: name => `${name} · Lowest`,
   sortPerTb: "Sorted by price per TB",
   sortTotal: "Sorted by total price",
+  sortNewest: "Newest first",
+  rankNewest: n => `${n === 1 ? "1 related deal" : `${n} related deals`} from the last 30 days across several models, newest first.`,
   total: p => `${p} total`,
   perTbShort: p => `${p}/TB`,
   featuredEmpty: "No picks right now",
@@ -912,9 +916,9 @@ function rowHtml(d, i, opts) {
   const big = perTb ? T.perTbShort(money(d.per_tb, true)) : money(d.price);
   const small = perTb ? T.total(money(d.price)) : "";
   const gone = !!d.expired_at;
-  return `<a class="row ${gone ? "expired" : i === 0 ? "first" : ""}" href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">
+  return `<a class="row ${gone ? "expired" : i === 0 && !opts.noRank ? "first" : ""}" href="${esc(d.url)}" target="_blank" rel="noopener" title="${esc(d.title)}">
     ${gone ? `<span class="exp-badge">${esc(T.expired)}</span>` : ""}
-    <span class="no ${!gone && i < 3 ? "hi" : ""}">${gone ? "–" : i + 1}</span>
+    ${opts.noRank ? "" : `<span class="no ${!gone && i < 3 ? "hi" : ""}">${gone ? "–" : i + 1}</span>`}
     <span class="thumb">${pic(d, 40)}</span>
     <span class="info">
       <span class="t">${esc(cleanTitle(d.title))}</span>
@@ -1087,12 +1091,14 @@ async function showTag(slug, query) {
     history.replaceState({}, "", tagHref(tag.slug)); drawLang();     // 被合并的旧网址、旧的 ?t= 网址，换成新标签的网址
   }
   const live = deals.filter(d => !d.expired_at);
-  const low = live.length ? (tag.per_tb && live[0].per_tb != null ? T.perTbShort(money(live[0].per_tb, true)) : money(live[0].price)) : "";
+  const newest = tag.sort === "newest";                              // 多个型号放在一起的标签：按发现时间排，不显示名次
+  const cheapest = newest ? live.reduce((m, d) => !m || d.price < m.price ? d : m, null) : live[0];
+  const low = cheapest ? (tag.per_tb && cheapest.per_tb != null ? T.perTbShort(money(cheapest.per_tb, true)) : money(cheapest.price)) : "";
   setSeo(T.pageTitle(name), T.tagMeta(name, live.length, low), tag.slug);
   tagInput.value = name;
-  const intro = !deals.length ? "" : tag.kind === "keyword" ? T.rankKeyword(deals.length) : tag.per_tb ? T.rankPerTb(deals.length) : T.rankTotal(deals.length);
+  const intro = !deals.length ? "" : newest ? T.rankNewest(deals.length) : tag.kind === "keyword" ? T.rankKeyword(deals.length) : tag.per_tb ? T.rankPerTb(deals.length) : T.rankTotal(deals.length);
   const isNew = Date.now() - new Date(tag.created_at || 0) < 2 * 86400000;
-  const eyebrow = [T.categories[tag.category] || "", tag.kind === "keyword" ? "" : tag.per_tb ? T.sortPerTb : T.sortTotal].filter(Boolean).join(" · ");
+  const eyebrow = [T.categories[tag.category] || "", newest ? T.sortNewest : tag.kind === "keyword" ? "" : tag.per_tb ? T.sortPerTb : T.sortTotal].filter(Boolean).join(" · ");
   body.innerHTML = `
     <div class="tag-head">${eyebrow ? `<span class="eyebrow">${esc(eyebrow)}</span>` : ""}<h1>${esc(name)}</h1>${intro ? `<p>${esc(intro)}</p>` : ""}</div>
     <form class="sub" id="subForm" novalidate>
@@ -1107,7 +1113,7 @@ async function showTag(slug, query) {
       <p class="fine">${esc(T.subPrivacy[0])}<a href="${PRIVACY_URL}">${esc(T.subPrivacy[1])}</a>${esc(T.subPrivacy[2])}</p>
     </form>
     ${deals.length
-      ? `<div class="rank-list">${deals.map((d, i) => rowHtml(d, i, { showCategory: tag.kind === "keyword" })).join("")}</div>`
+      ? `<div class="rank-list">${deals.map((d, i) => rowHtml(d, i, { showCategory: tag.kind === "keyword" && !newest, noRank: newest })).join("")}</div>`
       : `<div class="empty"><strong>${esc(T.tagEmpty)}</strong>${esc(tag.kind === "keyword" || isNew ? T.tagEmptyNew : T.tagEmptyOld)}</div>`}`;
   $("subForm").addEventListener("submit", e => {
     e.preventDefault();
