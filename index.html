@@ -19,7 +19,7 @@
 <meta property="og:description" id="ogDesc" content="搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。">
 <meta property="og:url" id="ogUrl" content="https://subdeals.net/">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Subdeals","alternateName":["北美捡漏快报","subdeals.net"],"url":"https://subdeals.net/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Subdeals","alternateName":"subdeals.net","url":"https://subdeals.net/"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif:wght@700&family=Noto+Serif+SC:wght@700&display=swap" rel="stylesheet">
@@ -54,10 +54,6 @@
   .logo { font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap; }
   .logo b { font-weight:800; color:var(--accent); }
   .logo span { font-weight:500; }
-  .logo i { font-style:normal; font-family:var(--sans); font-size:15px; font-weight:700; letter-spacing:.02em; color:var(--muted);
-            margin-left:10px; padding-left:10px; border-left:1px solid var(--line); vertical-align:3px; }
-  @media (max-width:1240px) { #viewTag .logo i { display:none; } }
-  @media (max-width:380px) { .logo i { display:none; } }
   .sub.home { margin:0 0 26px; }
   .top .spacer { flex:1; }
   .top .search { flex:1 1 320px; max-width:560px; }
@@ -364,9 +360,8 @@ const PRERENDER = !!window.__PRERENDER__;                         // 生成静�
 const I18N = { zh: {
   placeholder: "比如 5090 游戏本、4TB 固态",
   searchBtn: "搜索",
-  brandCn: "北美捡漏快报",
   heroTitle: ["搜你想买的并订阅", "真优惠出现时不错过"],
-  heroText: "搜罗全网优惠信息，假优惠不打扰，真优惠不错过，这个黑五So eazy!",
+  heroText: "搜罗全网优惠信息，假优惠不打扰，真优惠不错过，这个黑五So easy!",
   picksSubTitle: "捡漏精选有更新，发邮件告诉你",
   hotLead: "大家在搜",
   hsubToggle: "订阅",
@@ -397,7 +392,7 @@ const I18N = { zh: {
   perTb: p => `每 TB ${p}`,
   justNow: "刚刚", minAgo: n => `${n} 分钟前`, hourAgo: n => `${n} 小时前`, dayAgo: n => `${n} 天前`,
   found: s => `${s}发现`,
-  priceNote: "北美捡漏快报 Subdeals · 价格以商家页面为准",
+  priceNote: "Subdeals · 价格以商家页面为准",
   dealsCount: n => `${n} 条价格`,
   missTitle: q => `还没有「${q}」这个标签`,
   missRelated: "你要找的是不是：",
@@ -436,14 +431,13 @@ const I18N = { zh: {
   pageTitle: name => `${name} 优惠价格排行（近 30 天）· Subdeals`,
   tagMeta: (name, n, low) => n ? `${name}近 30 天的 ${n} 个优惠价格，从低到高排好，目前最低 ${low}。来自 Slickdeals、Woot 等优惠网站，自动更新。`
     : `${name}的优惠价格排行。有新价格时自动更新，也可以订阅邮件提醒。`,
-  homeTitle: "北美捡漏快报 Subdeals · 电脑硬件好价，按型号排好",
+  homeTitle: "Subdeals · 电脑硬件好价，按型号排好",
   metaDesc: "搜索你关心的电脑硬件，查看最近的价格排行：游戏本、显卡、台式机、固态和机械硬盘。",
   categories: { apple:"苹果", laptop:"游戏本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘" },
   conditions: { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" },
 }, en: {
   placeholder: "e.g. 5090 laptop, 4TB SSD",
   searchBtn: "Search",
-  brandCn: "",
   picksSubTitle: "Get an email when we add new picks",
   heroTitle: ["Search a model.", "See the lowest price in 30 days."],
   heroText: "We sort PC hardware deals from Slickdeals, Reddit and Woot by model, and rank them from lowest to highest price.",
@@ -1141,7 +1135,6 @@ drawLang();
 $("heroTitle").innerHTML = `${esc(T.heroTitle[0])}<br><mark>${esc(T.heroTitle[1])}</mark>`;
 $("heroText").textContent = T.heroText;
 $("hsubToggle").textContent = T.hsubToggle;
-if (T.brandCn) document.querySelectorAll(".logo").forEach(a => { a.insertAdjacentHTML("beforeend", `<i>${esc(T.brandCn)}</i>`); a.setAttribute("aria-label", "Subdeals " + T.brandCn); });
 // 首页"捡漏精选"的订阅框：订阅的是首页精选（特殊标签 picks）
 $("homeSub").innerHTML = `
   <span class="label">${esc(T.picksSubTitle)}</span>
