@@ -4,7 +4,7 @@ Deal 筛选（只判断是否达标，不打分）
 改规则只需要改表，不需要改这个文件。
 """
 
-MATCH_FIELDS = ("gpu", "ram_gb", "capacity_tb")   # 基础规则可以按这几列区分
+MATCH_FIELDS = ("gpu", "apple_model", "ram_gb", "capacity_tb")   # 基础规则可以按这几列区分（苹果按型号）
 NUMBER_FIELDS = ("ram_gb", "capacity_tb")
 
 

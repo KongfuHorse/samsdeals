@@ -334,7 +334,7 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>启用</th><th>品类</th><th>显卡</th><th>内存 GB</th><th>容量 TB</th><th>比较方式</th><th>标准价 $</th><th>备注</th><th></th></tr></thead>
+        <thead><tr><th>启用</th><th>品类</th><th>显卡 / 苹果型号</th><th>内存 GB</th><th>容量 TB</th><th>比较方式</th><th>标准价 $</th><th>备注</th><th></th></tr></thead>
         <tbody id="rulesBody"></tbody>
       </table>
     </div>
@@ -884,6 +884,7 @@ $("autoList").addEventListener("change", async e => {
 function ruleRow(r) {
   const cats = optionsOf("category").map(o => [o.value, o.label]);
   const gpus = optionsOf("gpu").map(o => [o.value, o.label]);
+  const apples = optionsOf("apple_model").map(o => [o.value, o.label]);
   const tr = document.createElement("tr");
   tr.dataset.id = r.id || "";
   if (!r.id) tr.classList.add("dirty");
@@ -891,7 +892,7 @@ function ruleRow(r) {
   tr.innerHTML = `
     <td><label class="switch"><input type="checkbox" class="f-active" ${r.active !== false ? "checked" : ""}><span></span></label></td>
     <td style="min-width:110px">${selectHtml("f-category", cats, r.category)}</td>
-    <td style="min-width:120px">${selectHtml("f-gpu", gpus, r.gpu, "不限")}</td>
+    <td style="min-width:120px">${r.category === "apple" ? selectHtml("f-gpu", apples, r.apple_model, "不限") : selectHtml("f-gpu", gpus, r.gpu, "不限")}</td>
     <td style="width:80px"><input type="number" class="f-ram" min="0" step="1" value="${r.ram_gb ?? ""}" placeholder="不限"></td>
     <td style="width:80px"><input type="number" class="f-cap" min="0" step="0.5" value="${r.capacity_tb ?? ""}" placeholder="不限"></td>
     <td style="min-width:110px">${selectHtml("f-mode", [["total", "单件价格"], ["per_tb", "每 TB 价格"]], r.price_mode || "total")}</td>
@@ -899,6 +900,9 @@ function ruleRow(r) {
     <td style="min-width:140px"><input type="text" class="f-note" value="${esc(r.note)}"></td>
     <td><div class="actions"><button class="primary f-save">保存</button><button class="danger f-del">删除</button></div></td>`;
   tr.addEventListener("input", () => markDirty(tr));
+  tr.querySelector(".f-category").addEventListener("change", e => {            // 品类换成苹果时，第三列换成苹果型号
+    tr.querySelector(".f-gpu").outerHTML = selectHtml("f-gpu", e.target.value === "apple" ? apples : gpus, "", "不限");
+  });
   tr.querySelector(".f-active").addEventListener("change", () => { tr.classList.toggle("inactive", !tr.querySelector(".f-active").checked); });
   tr.querySelector(".f-save").addEventListener("click", () => saveRule(tr));
   tr.querySelector(".f-del").addEventListener("click", () => deleteRule(tr));
@@ -917,7 +921,9 @@ async function saveRule(tr) {
   const price = q(".f-price").value;
   if (!price || Number(price) <= 0) { toast("请填写标准价", true); q(".f-price").focus(); return; }
   const rule = {
-    id: tr.dataset.id || null, category: q(".f-category").value, gpu: q(".f-gpu").value,
+    id: tr.dataset.id || null, category: q(".f-category").value,
+    gpu: q(".f-category").value === "apple" ? "" : q(".f-gpu").value,
+    apple_model: q(".f-category").value === "apple" ? q(".f-gpu").value : "",
     ram_gb: q(".f-ram").value, capacity_tb: q(".f-cap").value, price_mode: q(".f-mode").value,
     max_price: price, note: q(".f-note").value, active: q(".f-active").checked,
   };
