@@ -361,7 +361,7 @@
     <span class="info">
       <span class="t">13.6" Apple MacBook Air Laptop (2026): M5 Chip, 16GB RAM, 512GB SSD</span>
       <span class="money-inline">$1,089</span>
-      <span class="meta">New · Slickdeals · Found 3 days ago</span>
+      <span class="meta">New · Slickdeals · Found 4 days ago</span>
     </span>
     <span class="money"><span class="big">$1,089</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20245341-apple-macbook-air-2026-13-in-notebook-with-apple-intelligence-apple-m5-10-core-cpu-8-core-gpu-16-gb-ram-512-gb-ssd-1089" target="_blank" rel="noopener" title="Apple MacBook Air (2026) 13 in. Notebook with Apple Intelligence, Apple M5 10-Core CPU, 8-Core GPU, 16 GB RAM, 512 GB SSD $1089">
@@ -374,16 +374,16 @@
       <span class="meta">New · Slickdeals · Found 15 days ago</span>
     </span>
     <span class="money"><span class="big">$1,089</span></span>
-  </a><a class="row " href="https://slickdeals.net/f/20299716-1099-apple-macbook-air-13-6-laptop-2026-m5-10-core-chip-16gb-ram-512gb-ssd-at-amazon" target="_blank" rel="noopener" title="$1099* | Apple MacBook Air 13.6&quot; Laptop (2026): M5 10-Core Chip, 16GB RAM, 512GB SSD at Amazon">
+  </a><a class="row " href="https://slickdeals.net/f/20235795-1099-99-13-inch-apple-macbook-air-laptop-with-m5-chip-16gb-ram-512gb-ssd-sky-blue-at-amazon" target="_blank" rel="noopener" title="$1099.99* | 13-Inch Apple MacBook Air Laptop with M5 chip (16GB RAM, 512GB SSD, Sky Blue) at Amazon">
     
     <span class="no hi">3</span>
-    <span class="thumb"><img src="https://slickdeals.net/attachment/1/8/6/3/2/3/2/450x450/22172142.thumb" alt="" loading="lazy" referrerpolicy="no-referrer" data-cat="apple" data-size="40" onerror="this.outerHTML=iconSvg(this.dataset.cat,Number(this.dataset.size))"></span>
+    <span class="thumb"><img src="https://slickdeals.net/attachment/1/1/7/1/5/2/7/450x450/22159956.thumb" alt="" loading="lazy" referrerpolicy="no-referrer" data-cat="apple" data-size="40" onerror="this.outerHTML=iconSvg(this.dataset.cat,Number(this.dataset.size))"></span>
     <span class="info">
-      <span class="t">Apple MacBook Air 13.6" Laptop (2026): M5 10-Core Chip, 16GB RAM, 512GB SSD at Amazon</span>
-      <span class="money-inline">$1,099</span>
-      <span class="meta">New · Amazon · Slickdeals · Found 4 days ago</span>
+      <span class="t">13-Inch Apple MacBook Air Laptop with M5 chip (16GB RAM, 512GB SSD, Sky Blue) at Amazon</span>
+      <span class="money-inline">$1,099.99</span>
+      <span class="meta">New · Amazon · Slickdeals · Found 17 days ago</span>
     </span>
-    <span class="money"><span class="big">$1,099</span></span>
+    <span class="money"><span class="big">$1,099.99</span></span>
   </a><a class="row " href="https://www.reddit.com/r/buildapcsales/comments/1xkkio9/laptop_apple_2026_macbook_air_13_m5_16gb_unified/" target="_blank" rel="noopener" title="[Laptop] Apple 2026 MacBook Air 13&quot; M5, 16GB Unified Memory, 512GB SSD is $1,099.99 at Amazon">
     
     <span class="no ">4</span>
@@ -1011,10 +1011,16 @@ const same = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").toLower
 function sameModel(a, b) {
   if (!a.brand || !same(a.brand, b.brand)) return false;
   if (!["category", "gpu", "apple_model", "condition"].every(k => same(a[k], b[k]))) return false;
-  if (Number(a.capacity_tb || 0) !== Number(b.capacity_tb || 0) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
+  // 容量两边都有才比（电脑的硬盘容量 AI 有时填有时不填）
+  if ((a.capacity_tb && b.capacity_tb && Number(a.capacity_tb) !== Number(b.capacity_tb)) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
   const A = modelTokens(a.title), B = modelTokens(b.title);
   const [small, big] = A.size <= B.size ? [A, B] : [B, A];
-  return small.size >= 2 && [...small].every(w => big.has(w));
+  if (small.size >= 2 && [...small].every(w => big.has(w))) return true;
+  // 同一个商品的帖子写法不一样：短标题里 80% 以上的型号词在长标题里也有，并且内存、硬盘大小不冲突
+  const sizes = S => [...S].filter(w => /^\d+(gb|tb)$/.test(w));
+  const onlyA = sizes(A).filter(w => !B.has(w)), onlyB = sizes(B).filter(w => !A.has(w));
+  if (onlyA.length && onlyB.length) return false;
+  return small.size >= 3 && [...small].filter(w => big.has(w)).length / small.size >= 0.8;
 }
 function mergeSame(list, on) {
   if (!on) return list;

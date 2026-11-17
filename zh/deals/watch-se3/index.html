@@ -411,7 +411,7 @@
     <span class="info">
       <span class="t">Apple Watch SE 3 [GPS + Cellular 40mm] Smartwatch with Midnight Aluminum Case with Navy Blue Sport Band - S/M</span>
       <span class="money-inline">$249</span>
-      <span class="meta">全新 · Slickdeals · 23 小时前发现</span>
+      <span class="meta">全新 · Slickdeals · 24 小时前发现</span>
     </span>
     <span class="money"><span class="big">$249</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20314911-apple-watch-se-3-gps-cellular-44mm-smartwatch-midnight-aluminum-case-with-navy-blue-sport-band-279-00-free-shipping" target="_blank" rel="noopener" title="Apple Watch SE 3 GPS + Cellular 44mm Smartwatch (Midnight Aluminum Case with Navy Blue Sport Band) $279.00 + Free Shipping">
@@ -991,10 +991,16 @@ const same = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").toLower
 function sameModel(a, b) {
   if (!a.brand || !same(a.brand, b.brand)) return false;
   if (!["category", "gpu", "apple_model", "condition"].every(k => same(a[k], b[k]))) return false;
-  if (Number(a.capacity_tb || 0) !== Number(b.capacity_tb || 0) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
+  // 容量两边都有才比（电脑的硬盘容量 AI 有时填有时不填）
+  if ((a.capacity_tb && b.capacity_tb && Number(a.capacity_tb) !== Number(b.capacity_tb)) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
   const A = modelTokens(a.title), B = modelTokens(b.title);
   const [small, big] = A.size <= B.size ? [A, B] : [B, A];
-  return small.size >= 2 && [...small].every(w => big.has(w));
+  if (small.size >= 2 && [...small].every(w => big.has(w))) return true;
+  // 同一个商品的帖子写法不一样：短标题里 80% 以上的型号词在长标题里也有，并且内存、硬盘大小不冲突
+  const sizes = S => [...S].filter(w => /^\d+(gb|tb)$/.test(w));
+  const onlyA = sizes(A).filter(w => !B.has(w)), onlyB = sizes(B).filter(w => !A.has(w));
+  if (onlyA.length && onlyB.length) return false;
+  return small.size >= 3 && [...small].filter(w => big.has(w)).length / small.size >= 0.8;
 }
 function mergeSame(list, on) {
   if (!on) return list;

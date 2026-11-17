@@ -451,7 +451,7 @@
     <span class="info">
       <span class="t">Acer Helios Neo 16 AI 16" 9 275HX | 32GB | 1TB | RTX 5070</span>
       <span class="money-inline">$1,799.99</span>
-      <span class="meta">New · Slickdeals · Found 16 hr ago</span>
+      <span class="meta">New · Slickdeals · Found 17 hr ago</span>
     </span>
     <span class="money"><span class="big">$1,799.99</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20275800-asus-rog-strix-g18-2025-18-wqxda-240hz-gaming-laptop-ryzen-9-9955hx-rtx-5070-32gb-1tb-1849" target="_blank" rel="noopener" title="ASUS ROG Strix G18 2025 18&quot; WQXDA 240Hz Gaming Laptop (Ryzen 9 9955HX / RTX 5070 / 32GB / 1TB) $1849">
@@ -471,7 +471,7 @@
     <span class="info">
       <span class="t">msi Crosshair A16 HX 16” 2.5K QHD+ 240Hz Gaming Laptop – AMD Ryzen 9 8940HX, NVIDIA RTX 5070, 32GB DDR5, 1TB NVMe SSD, Wi-Fi 6E, USB-C, Windows 11 Home</span>
       <span class="money-inline">$2,294</span>
-      <span class="meta">New · Slickdeals · Found 12 hr ago</span>
+      <span class="meta">New · Slickdeals · Found 13 hr ago</span>
     </span>
     <span class="money"><span class="big">$2,294</span></span>
   </a><a class="row " href="https://computers.woot.com/offers/alienware-16-aurora-rtx-5070-gaming-laptop-7" target="_blank" rel="noopener" title="Alienware 16 Aurora RTX 5070 Gaming Laptop - New - $2299.99">
@@ -1061,10 +1061,16 @@ const same = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").toLower
 function sameModel(a, b) {
   if (!a.brand || !same(a.brand, b.brand)) return false;
   if (!["category", "gpu", "apple_model", "condition"].every(k => same(a[k], b[k]))) return false;
-  if (Number(a.capacity_tb || 0) !== Number(b.capacity_tb || 0) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
+  // 容量两边都有才比（电脑的硬盘容量 AI 有时填有时不填）
+  if ((a.capacity_tb && b.capacity_tb && Number(a.capacity_tb) !== Number(b.capacity_tb)) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
   const A = modelTokens(a.title), B = modelTokens(b.title);
   const [small, big] = A.size <= B.size ? [A, B] : [B, A];
-  return small.size >= 2 && [...small].every(w => big.has(w));
+  if (small.size >= 2 && [...small].every(w => big.has(w))) return true;
+  // 同一个商品的帖子写法不一样：短标题里 80% 以上的型号词在长标题里也有，并且内存、硬盘大小不冲突
+  const sizes = S => [...S].filter(w => /^\d+(gb|tb)$/.test(w));
+  const onlyA = sizes(A).filter(w => !B.has(w)), onlyB = sizes(B).filter(w => !A.has(w));
+  if (onlyA.length && onlyB.length) return false;
+  return small.size >= 3 && [...small].filter(w => big.has(w)).length / small.size >= 0.8;
 }
 function mergeSame(list, on) {
   if (!on) return list;

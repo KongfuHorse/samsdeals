@@ -471,7 +471,7 @@
     <span class="info">
       <span class="t">Verbatim Vi7000 1TB NVMe SSD | 4.0 x4 | DRAM cache | PC PS5</span>
       <span class="money-inline">$129.00/TB <small>总价 $129</small></span>
-      <span class="meta">全新 · Reddit · 14 小时前发现</span>
+      <span class="meta">全新 · Reddit · 15 小时前发现</span>
     </span>
     <span class="money"><span class="big">$129.00/TB</span><span class="small">总价 $129</span></span>
   </a><a class="row " href="https://www.reddit.com/r/buildapcsales/comments/1xtk3gd/ssd_m2_samsung_geek_squad_refurbished_good_990/" target="_blank" rel="noopener" title="[SSD - M.2] Samsung Geek Squad REFURBISHED GOOD 990 PRO 1TB Internal SSD PCle Gen 4x4 NVMe - $139.99">
@@ -741,7 +741,7 @@
     <span class="info">
       <span class="t">WD Black SN850P 1TB with heatsink (PS5 SSD)</span>
       <span class="money-inline">$299.99/TB <small>总价 $299.99</small></span>
-      <span class="meta">全新 · Best Buy · TechRadar · 14 小时前发现</span>
+      <span class="meta">全新 · Best Buy · TechRadar · 15 小时前发现</span>
     </span>
     <span class="money"><span class="big">$299.99/TB</span><span class="small">总价 $299.99</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20288853-samsung-990-pro-2tb-nvme-m-2-2280-pcie-4-0-ssd-w-heatsink-sony-playstation-5-slim-digital-edition-825gb-console-1038-99-free-shipping" target="_blank" rel="noopener" title="Samsung 990 Pro 2TB NVMe M.2 2280 PCIe 4.0 SSD w/ Heatsink + Sony PlayStation 5 Slim Digital Edition 825GB Console $1038.99 + Free Shipping">
@@ -1341,10 +1341,16 @@ const same = (a, b) => String(a ?? "").toLowerCase() === String(b ?? "").toLower
 function sameModel(a, b) {
   if (!a.brand || !same(a.brand, b.brand)) return false;
   if (!["category", "gpu", "apple_model", "condition"].every(k => same(a[k], b[k]))) return false;
-  if (Number(a.capacity_tb || 0) !== Number(b.capacity_tb || 0) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
+  // 容量两边都有才比（电脑的硬盘容量 AI 有时填有时不填）
+  if ((a.capacity_tb && b.capacity_tb && Number(a.capacity_tb) !== Number(b.capacity_tb)) || Number(a.quantity || 1) !== Number(b.quantity || 1)) return false;
   const A = modelTokens(a.title), B = modelTokens(b.title);
   const [small, big] = A.size <= B.size ? [A, B] : [B, A];
-  return small.size >= 2 && [...small].every(w => big.has(w));
+  if (small.size >= 2 && [...small].every(w => big.has(w))) return true;
+  // 同一个商品的帖子写法不一样：短标题里 80% 以上的型号词在长标题里也有，并且内存、硬盘大小不冲突
+  const sizes = S => [...S].filter(w => /^\d+(gb|tb)$/.test(w));
+  const onlyA = sizes(A).filter(w => !B.has(w)), onlyB = sizes(B).filter(w => !A.has(w));
+  if (onlyA.length && onlyB.length) return false;
+  return small.size >= 3 && [...small].filter(w => big.has(w)).length / small.size >= 0.8;
 }
 function mergeSame(list, on) {
   if (!on) return list;
