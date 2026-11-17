@@ -16,7 +16,7 @@ create table if not exists tags (
   name_zh text not null,                        -- 中文显示名
   name_en text,                                 -- 英文显示名（第三阶段用）
   aliases text[] not null default '{}',         -- 别名，联想时也会匹配
-  kind text not null default 'structured' check (kind in ('structured', 'keyword')),
+  kind text not null default 'structured' check (kind in ('structured', 'keyword', 'featured')),   -- featured = 首页捡漏精选（见 schema_picks.sql）
   conditions jsonb not null default '{}',       -- structured: {category, gpu, capacity_tb}；keyword: {keywords: [...]}
   in_scope boolean not null default true,       -- 是否在我们覆盖的品类里
   created_by text not null default 'admin' check (created_by in ('admin', 'rule', 'ai')),
@@ -109,7 +109,8 @@ returns table (id bigint, slug text, name_zh text, name_en text, aliases text[],
 language sql stable security definer set search_path = public as $$
   select t.id, t.slug, t.name_zh, t.name_en, t.aliases, t.kind, t.conditions, t.in_scope, t.created_by, t.approved,
          t.merged_into, t.created_at, coalesce(s.visitors, 0), coalesce(s.searches, 0),
-         t.merged_into is null and (t.approved or coalesce(s.visitors, 0) >= (select tag_public_min_visitors from settings where id = 1))
+         t.merged_into is null and t.kind <> 'featured'
+           and (t.approved or coalesce(s.visitors, 0) >= (select tag_public_min_visitors from settings where id = 1))
   from tags t
   left join (select tag_id, count(distinct visitor) visitors, count(*) searches
              from tag_searches where tag_id is not null group by tag_id) s on s.tag_id = t.id;
@@ -260,6 +261,15 @@ begin
         and (t.conditions->>'capacity_tb' is null or d.capacity_tb = (t.conditions->>'capacity_tb')::numeric)
         and (t.conditions->>'apple_model' is null or d.apple_model = t.conditions->>'apple_model')
       order by sort_key nulls last limit 300) x;
+  elsif t.kind = 'featured' then
+    -- 首页捡漏精选：和首页显示的一样（达标、最近 14 天或置顶），新的在前。过期的也带上，由网页和邮件去掉
+    v_storage := false; v_newest := true;
+    select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc), '[]') into v_deals from (
+      select d.title, d.url, d.source, d.store, d.price, d.category, d.condition, d.quantity, d.capacity_tb, d.created_at, d.image_url,
+             d.brand, d.gpu, d.apple_model, d.expired_at, null::numeric as per_tb
+      from deals d
+      where d.status = 'passed' and d.price is not null and (d.created_at > now() - interval '14 days' or d.pinned)
+      order by d.created_at desc limit 100) x;
   else
     v_storage := false;
     v_newest := t.conditions->>'sort' = 'newest';        -- 多个型号放在一起的标签：按发现时间从新到旧
@@ -373,7 +383,8 @@ begin
     'tags', (select coalesce(jsonb_agg(to_jsonb(t) || jsonb_build_object(
                       'subscribers', (select count(*) from subscriptions x where x.tag_id = t.id and x.status = 'active'),
                       'merged_into_name', (select name_zh from tags m where m.id = t.merged_into))
-                    order by t.merged_into nulls first, t.approved, t.visitors desc, t.id desc), '[]') from _tags_with_stats() t),
+                    order by t.merged_into nulls first, t.approved, t.visitors desc, t.id desc), '[]')
+             from _tags_with_stats() t where t.kind <> 'featured'),
     'synonyms', (select coalesce(jsonb_agg(to_jsonb(s) order by s.category, s.term), '[]') from tag_synonyms s),
     'settings', (select jsonb_build_object('tag_public_min_visitors', tag_public_min_visitors, 'auto_source_max', auto_source_max,
                    'auto_source_stale_days', auto_source_stale_days, 'tag_daily_limit', tag_daily_limit) from settings where id = 1),

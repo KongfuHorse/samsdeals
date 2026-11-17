@@ -39,6 +39,8 @@
   .lang a[aria-current] { color:var(--ink); }
   .logo { font-size:26px; letter-spacing:-.03em; line-height:1; color:var(--ink); text-decoration:none; }
   .logo span { font-weight:500; } .logo b { font-weight:800; color:var(--accent); }
+  .logo i { font-style:normal; font-size:15px; font-weight:700; letter-spacing:.02em; color:var(--muted); margin-left:10px; padding-left:10px; border-left:1px solid var(--line); vertical-align:3px; }
+  @media (max-width:380px) { .logo i { display:none; } }
   h1 { font:700 40px/1.2 var(--serif); margin:44px 0 10px; }
   .lead { margin:0; font-size:17px; color:var(--muted); }
   .note { margin:26px 0 0; padding:18px 22px; border-radius:16px; background:var(--hl); font-size:16px; }
@@ -97,7 +99,7 @@ const LANG_Q = params.has("lang") ? `lang=${LANG}` : "";      // 网址里带了
 const withLang = (q) => [q, LANG_Q].filter(Boolean).join("&");
 const I18N = {
   zh: {
-    title: "管理订阅", loading: "正在加载…", note: "Subdeals · 价格以商家页面为准", privacy: "隐私政策", home: "回到首页",
+    title: "管理订阅", loading: "正在加载…", note: "北美捡漏快报 Subdeals · 价格以商家页面为准", privacy: "隐私政策", home: "回到首页",
     freq: { daily: "每天汇总", instant: "马上通知" },
     confirmed: t => `订阅成功：「${t}」。有新的好价，我们会发邮件告诉你。`,
     confirmFail: "确认没有成功", expired: "这个确认链接已经过期了。请回到标签页重新订阅。",
@@ -149,6 +151,7 @@ let key = params.get("k") || "";
 document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
 document.title = `${T.title} · Subdeals`;
 $("logo").href = home;
+if (LANG === "zh") $("logo").insertAdjacentHTML("beforeend", "<i>北美捡漏快报</i>");
 $("note").textContent = T.note;
 $("privacy").textContent = T.privacy;
 $("privacy").href = "privacy.html" + (LANG_Q ? "?" + LANG_Q : "");

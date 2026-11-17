@@ -33,6 +33,8 @@
   [hidden] { display:none !important; }
   .logo { font-size:26px; letter-spacing:-.03em; line-height:1; color:var(--ink); text-decoration:none; }
   .logo span { font-weight:500; } .logo b { font-weight:800; color:var(--accent); }
+  .logo i { font-style:normal; font-size:15px; font-weight:700; letter-spacing:.02em; color:var(--muted); margin-left:10px; padding-left:10px; border-left:1px solid var(--line); vertical-align:3px; }
+  @media (max-width:380px) { .logo i { display:none; } }
   h1 { font:700 40px/1.2 var(--serif); margin:44px 0 6px; }
   .date { color:var(--faint); font-size:14px; margin:0 0 26px; }
   h2 { font-size:19px; margin:34px 0 8px; }
@@ -196,9 +198,10 @@
     : "Subdeals 收集哪些信息、怎么用、保存多久，以及你可以怎么删除。";
   const home = "./" + (params.has("lang") ? "?lang=" + lang : "");
   document.getElementById("logo").href = home;
+  if (!en) document.getElementById("logo").insertAdjacentHTML("beforeend", "<i>北美捡漏快报</i>");
   document.getElementById("home").href = home;
   document.getElementById("home").textContent = en ? "Back to home" : "回到首页";
-  document.getElementById("note").textContent = en ? "Subdeals · Prices may change. Check the store page." : "Subdeals · 价格以商家页面为准";
+  document.getElementById("note").textContent = en ? "Subdeals · Prices may change. Check the store page." : "北美捡漏快报 Subdeals · 价格以商家页面为准";
   document.querySelector(`.lang a[data-l="${lang}"]`).setAttribute("aria-current", "true");
 })();
 </script>
