@@ -53,6 +53,7 @@
   .logo { font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap; }
   .logo b { font-weight:800; color:var(--accent); }
   .logo span { font-weight:500; }
+  .sub.home { margin:0 0 26px; }
   .top .spacer { flex:1; }
   .top .search { flex:1 1 320px; max-width:560px; }
   /* 标签页顶栏的订阅框 */
@@ -293,13 +294,13 @@
     <div class="wrap">
       <section class="hero">
         <div class="hero-text">
-          <h1 id="heroTitle">搜一个型号，<br><mark>看 30 天最低价</mark></h1>
-          <p id="heroText">Slickdeals、Reddit、Woot 上的电脑硬件优惠，我们按型号归类，从便宜到贵排好给你看。</p>
+          <h1 id="heroTitle">搜你想买的并订阅<br><mark>真优惠出现时不错过</mark></h1>
+          <p id="heroText">搜罗全网优惠信息，假优惠不打扰，真优惠不错过，这个黑五So easy!</p>
           <div class="search" id="searchHome"><form role="search" autocomplete="off">
       <input type="search" enterkeyhint="search" aria-label="搜索" placeholder="比如 5090 游戏本、4TB 固态" maxlength="60" role="combobox" aria-expanded="false" aria-autocomplete="list">
       <button class="go" type="submit">搜索</button>
     </form><ul class="suggest" role="listbox" hidden=""></ul></div>
-          <ul class="chips" id="hotTags"><li class="lead">大家在搜</li><li><a href="/zh/deals/ssd/" data-slug="ssd">固态硬盘</a></li><li><a href="/?t=rtx-5090-laptop&amp;lang=zh" data-slug="rtx-5090-laptop">RTX 5090 游戏本</a></li><li><a href="/zh/deals/laptop/" data-slug="laptop">游戏本</a></li><li><a href="/zh/deals/rtx-5060-desktop/" data-slug="rtx-5060-desktop">RTX 5060 台式机</a></li><li><a href="/zh/deals/rtx-5060-ti-gpu/" data-slug="rtx-5060-ti-gpu">RTX 5060 Ti 显卡</a></li><li><a href="/zh/deals/airpods-5/" data-slug="airpods-5">AirPods 5</a></li><li><a href="/zh/deals/iphone-16-pro/" data-slug="iphone-16-pro">iPhone 16 Pro</a></li><li><a href="/zh/deals/iphone-15-series/" data-slug="iphone-15-series">iPhone 15 Series</a></li><li><a href="/zh/deals/rtx-5070-ti-desktop/" data-slug="rtx-5070-ti-desktop">RTX 5070 Ti 台式机</a></li><li><a href="/zh/deals/hdd/" data-slug="hdd">机械硬盘</a></li></ul>
+          <ul class="chips" id="hotTags"><li class="lead">大家在搜</li><li><a href="/zh/deals/ssd/" data-slug="ssd">固态硬盘</a></li><li><a href="/zh/deals/rtx-5090-laptop/" data-slug="rtx-5090-laptop">RTX 5090 游戏本</a></li><li><a href="/zh/deals/laptop/" data-slug="laptop">游戏本</a></li><li><a href="/zh/deals/rtx-5060-desktop/" data-slug="rtx-5060-desktop">RTX 5060 台式机</a></li><li><a href="/zh/deals/rtx-5060-ti-gpu/" data-slug="rtx-5060-ti-gpu">RTX 5060 Ti 显卡</a></li><li><a href="/zh/deals/airpods-5/" data-slug="airpods-5">AirPods 5</a></li><li><a href="/zh/deals/iphone-16-pro/" data-slug="iphone-16-pro">iPhone 16 Pro</a></li><li><a href="/zh/deals/iphone-15-series/" data-slug="iphone-15-series">iPhone 15 Series</a></li><li><a href="/zh/deals/rtx-5070-ti-desktop/" data-slug="rtx-5070-ti-desktop">RTX 5070 Ti 台式机</a></li><li><a href="/zh/deals/hdd/" data-slug="hdd">机械硬盘</a></li></ul>
           <div class="miss" id="missHome" hidden=""></div>
         </div>
         <section class="collage" id="collage" aria-roledescription="carousel" hidden=""></section>
@@ -308,6 +309,16 @@
     <section class="facts-band"><div class="wrap" id="facts"><span><b>120</b> 个型号标签</span><span class="src">来源：Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar</span></div></section>
     <div class="wrap">
       <div class="sec-head"><h2 id="featuredTitle"></h2><span id="featuredNote"></span></div>
+      <form class="sub home" id="homeSub" novalidate="">
+  <span class="label">捡漏精选有更新，发邮件告诉你</span>
+  <input type="email" name="email" placeholder="你的邮箱" aria-label="你的邮箱" autocomplete="email">
+  <fieldset class="seg"><legend class="sr">多久通知一次</legend>
+    <label><input type="radio" name="frequency" value="daily" checked=""><span>每天汇总</span></label>
+    <label><input type="radio" name="frequency" value="instant"><span>马上通知</span></label>
+  </fieldset>
+  <button class="dark" type="submit">订阅</button>
+  <p class="msg" role="status" hidden=""></p>
+  <p class="fine">订阅即表示同意<a href="/privacy.html?lang=zh">隐私政策</a>。每封邮件都可以一键退订。</p></form>
       <main id="featured" class="grid" aria-live="polite"></main>
     </div>
   </div>
@@ -350,7 +361,7 @@
     <span class="info">
       <span class="t">Apple Mac Studio Desktop (2026): M5 Max, 36GB RAM, 512GB SSD</span>
       <span class="money-inline">$1,999.99</span>
-      <span class="meta">全新 · Slickdeals · 11 天前发现</span>
+      <span class="meta">全新 · Slickdeals · 12 天前发现</span>
     </span>
     <span class="money"><span class="big">$1,999.99</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20263098-apple-mac-studio-desktop-2026-m5-max-36gb-ram-1tb-ssd-2199-99" target="_blank" rel="noopener" title="Apple Mac Studio Desktop (2026): M5 Max, 36GB RAM, 1TB SSD $2199.99">
@@ -396,15 +407,16 @@ const PRERENDER = !!window.__PRERENDER__;                         // 生成静�
 const I18N = { zh: {
   placeholder: "比如 5090 游戏本、4TB 固态",
   searchBtn: "搜索",
-  heroTitle: ["搜一个型号，", "看 30 天最低价"],
-  heroText: "Slickdeals、Reddit、Woot 上的电脑硬件优惠，我们按型号归类，从便宜到贵排好给你看。",
+  heroTitle: ["搜你想买的并订阅", "真优惠出现时不错过"],
+  heroText: "搜罗全网优惠信息，假优惠不打扰，真优惠不错过，这个黑五So easy!",
+  picksSubTitle: "捡漏精选有更新，发邮件告诉你",
   hotLead: "大家在搜",
   hsubToggle: "订阅",
   hsubEmail: name => `邮箱，订阅「${name}」`,
   factsTags: n => `<b>${n}</b> 个型号标签`,
   factsCheck: s => `上次检查：<b>${s}</b>`,
   factsSources: "来源：Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar",
-  featured: "今日精选",
+  featured: "捡漏精选",
   featuredNote: "只放达到我们价格标准的",
   topOf: name => `${name} · 第 1 名`,
   lowestOf: name => `${name} · 最低`,
@@ -473,6 +485,7 @@ const I18N = { zh: {
 }, en: {
   placeholder: "e.g. 5090 laptop, 4TB SSD",
   searchBtn: "Search",
+  picksSubTitle: "Get an email when we add new picks",
   heroTitle: ["Search a model.", "See the lowest price in 30 days."],
   heroText: "We sort PC hardware deals from Slickdeals, Reddit and Woot by model, and rank them from lowest to highest price.",
   hotLead: "Popular searches",
@@ -1105,9 +1118,10 @@ async function showTag(slug, query) {
 }
 
 // 订阅：提交到服务器，服务器发确认邮件。say(文字) 用来显示进度和结果
-async function subscribe(email, frequency, say, btn) {
-  if (!CUR_TAG) return;
-  const sub = { email, tag: CUR_TAG.slug, frequency, lang: LANG };
+async function subscribe(email, frequency, say, btn, slug) {
+  slug = slug || (CUR_TAG && CUR_TAG.slug);
+  if (!slug) return;
+  const sub = { email, tag: slug, frequency, lang: LANG };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say(T.subBadEmail); return; }
   btn.disabled = true; say(T.subSending);
   try {
@@ -1168,6 +1182,23 @@ drawLang();
 $("heroTitle").innerHTML = `${esc(T.heroTitle[0])}<br><mark>${esc(T.heroTitle[1])}</mark>`;
 $("heroText").textContent = T.heroText;
 $("hsubToggle").textContent = T.hsubToggle;
+// 首页"捡漏精选"的订阅框：订阅的是首页精选（特殊标签 picks）
+$("homeSub").innerHTML = `
+  <span class="label">${esc(T.picksSubTitle)}</span>
+  <input type="email" name="email" placeholder="${esc(T.subEmail)}" aria-label="${esc(T.subEmail)}" autocomplete="email">
+  <fieldset class="seg"><legend class="sr">${esc(T.subFreq)}</legend>
+    <label><input type="radio" name="frequency" value="daily" checked><span>${esc(T.subDaily)}</span></label>
+    <label><input type="radio" name="frequency" value="instant"><span>${esc(T.subInstant)}</span></label>
+  </fieldset>
+  <button class="dark" type="submit">${esc(T.subBtn)}</button>
+  <p class="msg" role="status" hidden></p>
+  <p class="fine">${privacyNote()}</p>`;
+$("homeSub").addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target, msg = f.querySelector(".msg");
+  msg.hidden = false;
+  subscribe(f.email.value.trim(), f.frequency.value, t => { msg.textContent = t; }, f.querySelector("button[type=submit]"), "picks");
+});
 $("hsubBtn").textContent = T.subBtn;
 $("status").textContent = T.priceNote;
 const homeReady = rpc("public_home").then(d => {

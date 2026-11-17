@@ -53,6 +53,7 @@
   .logo { font-size:26px; letter-spacing:-.03em; line-height:1; white-space:nowrap; }
   .logo b { font-weight:800; color:var(--accent); }
   .logo span { font-weight:500; }
+  .sub.home { margin:0 0 26px; }
   .top .spacer { flex:1; }
   .top .search { flex:1 1 320px; max-width:560px; }
   /* 标签页顶栏的订阅框 */
@@ -299,7 +300,7 @@
       <input type="search" enterkeyhint="search" aria-label="Search" placeholder="e.g. 5090 laptop, 4TB SSD" maxlength="60" role="combobox" aria-expanded="false" aria-autocomplete="list">
       <button class="go" type="submit">Search</button>
     </form><ul class="suggest" role="listbox" hidden=""></ul></div>
-          <ul class="chips" id="hotTags"><li class="lead">Popular searches</li><li><a href="/en/deals/ssd/" data-slug="ssd">SSD</a></li><li><a href="/?t=rtx-5090-laptop&amp;lang=en" data-slug="rtx-5090-laptop">RTX 5090 Gaming Laptop</a></li><li><a href="/en/deals/laptop/" data-slug="laptop">Gaming Laptop</a></li><li><a href="/en/deals/rtx-5060-desktop/" data-slug="rtx-5060-desktop">RTX 5060 Desktop</a></li><li><a href="/en/deals/rtx-5060-ti-gpu/" data-slug="rtx-5060-ti-gpu">RTX 5060 Ti Graphics Card</a></li><li><a href="/en/deals/airpods-5/" data-slug="airpods-5">AirPods 5</a></li><li><a href="/en/deals/iphone-16-pro/" data-slug="iphone-16-pro">iPhone 16 Pro</a></li><li><a href="/en/deals/iphone-15-series/" data-slug="iphone-15-series">iPhone 15 Series</a></li><li><a href="/en/deals/rtx-5070-ti-desktop/" data-slug="rtx-5070-ti-desktop">RTX 5070 Ti Desktop</a></li><li><a href="/en/deals/hdd/" data-slug="hdd">HDD</a></li></ul>
+          <ul class="chips" id="hotTags"><li class="lead">Popular searches</li><li><a href="/en/deals/ssd/" data-slug="ssd">SSD</a></li><li><a href="/en/deals/rtx-5090-laptop/" data-slug="rtx-5090-laptop">RTX 5090 Gaming Laptop</a></li><li><a href="/en/deals/laptop/" data-slug="laptop">Gaming Laptop</a></li><li><a href="/en/deals/rtx-5060-desktop/" data-slug="rtx-5060-desktop">RTX 5060 Desktop</a></li><li><a href="/en/deals/rtx-5060-ti-gpu/" data-slug="rtx-5060-ti-gpu">RTX 5060 Ti Graphics Card</a></li><li><a href="/en/deals/airpods-5/" data-slug="airpods-5">AirPods 5</a></li><li><a href="/en/deals/iphone-16-pro/" data-slug="iphone-16-pro">iPhone 16 Pro</a></li><li><a href="/en/deals/iphone-15-series/" data-slug="iphone-15-series">iPhone 15 Series</a></li><li><a href="/en/deals/rtx-5070-ti-desktop/" data-slug="rtx-5070-ti-desktop">RTX 5070 Ti Desktop</a></li><li><a href="/en/deals/hdd/" data-slug="hdd">HDD</a></li></ul>
           <div class="miss" id="missHome" hidden=""></div>
         </div>
         <section class="collage" id="collage" aria-roledescription="carousel" hidden=""></section>
@@ -308,6 +309,16 @@
     <section class="facts-band"><div class="wrap" id="facts"><span><b>120</b> model tags</span><span class="src">Sources: Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar</span></div></section>
     <div class="wrap">
       <div class="sec-head"><h2 id="featuredTitle"></h2><span id="featuredNote"></span></div>
+      <form class="sub home" id="homeSub" novalidate="">
+  <span class="label">Get an email when we add new picks</span>
+  <input type="email" name="email" placeholder="Your email" aria-label="Your email" autocomplete="email">
+  <fieldset class="seg"><legend class="sr">How often</legend>
+    <label><input type="radio" name="frequency" value="daily" checked=""><span>Daily digest</span></label>
+    <label><input type="radio" name="frequency" value="instant"><span>Instant</span></label>
+  </fieldset>
+  <button class="dark" type="submit">Subscribe</button>
+  <p class="msg" role="status" hidden=""></p>
+  <p class="fine">By subscribing, you agree to our <a href="/privacy.html?lang=en">Privacy Policy</a>. Every email has a one-click unsubscribe link.</p></form>
       <main id="featured" class="grid" aria-live="polite"></main>
     </div>
   </div>
@@ -360,7 +371,7 @@
     <span class="info">
       <span class="t">Sam's Club Members: HP OMEN 16L Gaming Desktop w/ Core i7-14700F, RTX 5060, 16GB DDR5 RAM &amp; 1TB SSD</span>
       <span class="money-inline">$739</span>
-      <span class="meta">New · Sam's Club · Slickdeals · Found 3 days ago</span>
+      <span class="meta">New · Sam's Club · Slickdeals · Found 4 days ago</span>
     </span>
     <span class="money"><span class="big">$739</span></span>
   </a><a class="row " href="https://www.tomshardware.com/desktops/gaming-pcs/this-is-your-chance-to-secure-an-entire-entry-level-abs-gaming-pc-for-only-usd849-amazing-walmart-deal-sets-you-up-with-an-rtx-5060-graphics-card-and-shaves-usd350-off-the-list-price#abs-cyclone-aqua-gaming-desktop-intel-core-5-120-rtx-5060-8gb-16gb-ddr4-1tb-nvme" target="_blank" rel="noopener" title="ABS Cyclone Aqua Gaming Desktop, Intel Core 5 120, RTX 5060 8GB, 16GB DDR4, 1TB NVMe SSD">
@@ -390,7 +401,7 @@
     <span class="info">
       <span class="t">iBUYPOWER Slate Gaming Desktop PC AMD Ryzen 5 8400F 2024 NVIDIA GeForce RTX 5060 8GB 16GB DDR5 1TB NVMe SSD Storage Black</span>
       <span class="money-inline">$899.99</span>
-      <span class="meta">New · Reddit · Found 10 days ago</span>
+      <span class="meta">New · Reddit · Found 11 days ago</span>
     </span>
     <span class="money"><span class="big">$899.99</span></span>
   </a><a class="row " href="https://www.reddit.com/r/buildapcsales/comments/1xragy5/prebuilt_ibuypower_gaming_p_pc_ryzen_5_8400f_rtx/" target="_blank" rel="noopener" title="[Prebuilt] iBUYPOWER Gaming p PC Ryzen 5 8400F RTX 5060 8GB 16GB DDR5 1TB NVMe - $899.99">
@@ -410,7 +421,7 @@
     <span class="info">
       <span class="t">ABS Cyclone Aqua Gaming Desktop PC, Windows 11, Intel Core 5 Processor 120, GeForce RTX 5060 8GB, 16GB DDR4 RAM, 1TB NVMe SSD, WiFi, RGB</span>
       <span class="money-inline">$949</span>
-      <span class="meta">New · Slickdeals · Found 13 days ago</span>
+      <span class="meta">New · Slickdeals · Found 14 days ago</span>
     </span>
     <span class="money"><span class="big">$949</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20271252-open-boxes-asus-rog-g700-gaming-desktop-intel-ultra-5-225f-rtx-5060-16gb-ddr5-1tb-ssd-959-99" target="_blank" rel="noopener" title="Open Boxes: ASUS ROG G700 Gaming Desktop: Intel Ultra 5 225F, RTX 5060, 16GB DDR5, 1TB SSD $959.99">
@@ -420,7 +431,7 @@
     <span class="info">
       <span class="t">Open Boxes: ASUS ROG G700 Gaming Desktop: Intel Ultra 5 225F, RTX 5060, 16GB DDR5, 1TB SSD</span>
       <span class="money-inline">$959.99</span>
-      <span class="meta">Open box · Slickdeals · Found 9 days ago</span>
+      <span class="meta">Open box · Slickdeals · Found 10 days ago</span>
     </span>
     <span class="money"><span class="big">$959.99</span></span>
   </a><a class="row " href="https://www.reddit.com/r/buildapcsales/comments/1xnmpon/bestbuy_local_pickup_open_box_good_asus_rog_g700/" target="_blank" rel="noopener" title="[Bestbuy Local Pickup] Open Box - Good: ASUS - ROG G700 Gaming Desktop - Intel Ultra 5 225F - 16GB DDR5 Memory - NVIDIA RTX 5060 8GB - 1TB $972. Check Zip Code for availability">
@@ -430,7 +441,7 @@
     <span class="info">
       <span class="t">Open Box - Good: ASUS - ROG G700 Gaming Desktop - Intel Ultra 5 225F - 16GB DDR5 Memory - NVIDIA RTX 5060 8GB - 1TB $972. Check Zip Code for availability</span>
       <span class="money-inline">$972</span>
-      <span class="meta">Open box · Best Buy · Reddit · Found 12 days ago</span>
+      <span class="meta">Open box · Best Buy · Reddit · Found 13 days ago</span>
     </span>
     <span class="money"><span class="big">$972</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20252631-1099-walmart-cyberpowerpc-gamer-master-gaming-desktop-amd-ryzen-5-8400f-nvidia-geforce-rtx-5060-8gb-16gb-ddr5-1tb-ssd-black-gma7300wstv2" target="_blank" rel="noopener" title="$1099 WALMART CyberPowerPC Gamer Master Gaming Desktop, AMD Ryzen 5 8400F, NVIDIA GeForce RTX 5060 8GB, 16GB DDR5, 1TB SSD, Black, GMA7300WSTV2">
@@ -460,7 +471,7 @@
     <span class="info">
       <span class="t">CyberPowerPC Gaming PC, Intel Core i5-14400F, GeForce RTX 5060 8GB | Gamer Xtreme, 16GB DDR5, 1TB PCIe 4.0 SSD, WiFi Ready &amp; Windows 11 Home (GXiVR8060A47)</span>
       <span class="money-inline">$1,141</span>
-      <span class="meta">New · Slickdeals · Found 13 hr ago</span>
+      <span class="meta">New · Slickdeals · Found 23 hr ago</span>
     </span>
     <span class="money"><span class="big">$1,141</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20280384-1160-fs-newegg-by-lxz-prebuilt-gaming-pc-desktop-with-amd-ryzen-7-5700x-8-core-16-thread-rtx-5060-8gb-16gb-ddr4-1tb-nvme-wifi-6-windows-11" target="_blank" rel="noopener" title="$1160 FS NEWEGG by LXZ Prebuilt Gaming PC Desktop with AMD Ryzen 7 5700X 8-Core 16 Thread, RTX 5060 8GB, 16GB DDR4, 1TB NVMe, WiFi 6, Windows 11">
@@ -470,7 +481,7 @@
     <span class="info">
       <span class="t"></span>
       <span class="money-inline">$1,160</span>
-      <span class="meta">New · Newegg · Slickdeals · Found 7 days ago</span>
+      <span class="meta">New · Newegg · Slickdeals · Found 8 days ago</span>
     </span>
     <span class="money"><span class="big">$1,160</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20231004-cyberpowerpc-gaming-desktop-amd-ryzen-7-8700f-2024-nvidia-geforce-rtx-5060-8gb-16gb-ddr5-memory-1tb-ssd-storage-black-1199-99" target="_blank" rel="noopener" title="CyberPowerPC - Gaming Desktop - AMD Ryzen 7 8700F 2024 - NVIDIA GeForce RTX 5060 8GB - 16GB DDR5 Memory - 1TB SSD Storage - Black $1199.99">
@@ -520,7 +531,7 @@
     <span class="info">
       <span class="t"></span>
       <span class="money-inline">$1,559</span>
-      <span class="meta">New · Walmart · Slickdeals · Found 3 hr ago</span>
+      <span class="meta">New · Walmart · Slickdeals · Found 13 hr ago</span>
     </span>
     <span class="money"><span class="big">$1,559</span></span>
   </a><a class="row " href="https://slickdeals.net/f/20231721-msi-pro-dp180-ai-desktop-intel-core-ultra-7-265-rtx-5060-16gb-memory-1tb-ssd-wifi-6e-bt-5-3-win-11-home-advanced-1y-warranty-a2nvlg-1468us-1599" target="_blank" rel="noopener" title="msi Pro DP180 AI Desktop, Intel Core Ultra 7-265, RTX 5060, 16GB Memory, 1TB SSD, WiFi 6E, BT 5.3, Win 11 Home Advanced, 1Y Warranty (A2NVLG-1468US) $1599">
@@ -566,15 +577,16 @@ const PRERENDER = !!window.__PRERENDER__;                         // 生成静�
 const I18N = { zh: {
   placeholder: "比如 5090 游戏本、4TB 固态",
   searchBtn: "搜索",
-  heroTitle: ["搜一个型号，", "看 30 天最低价"],
-  heroText: "Slickdeals、Reddit、Woot 上的电脑硬件优惠，我们按型号归类，从便宜到贵排好给你看。",
+  heroTitle: ["搜你想买的并订阅", "真优惠出现时不错过"],
+  heroText: "搜罗全网优惠信息，假优惠不打扰，真优惠不错过，这个黑五So easy!",
+  picksSubTitle: "捡漏精选有更新，发邮件告诉你",
   hotLead: "大家在搜",
   hsubToggle: "订阅",
   hsubEmail: name => `邮箱，订阅「${name}」`,
   factsTags: n => `<b>${n}</b> 个型号标签`,
   factsCheck: s => `上次检查：<b>${s}</b>`,
   factsSources: "来源：Slickdeals · Reddit · Woot · Tom's Hardware · TechRadar",
-  featured: "今日精选",
+  featured: "捡漏精选",
   featuredNote: "只放达到我们价格标准的",
   topOf: name => `${name} · 第 1 名`,
   lowestOf: name => `${name} · 最低`,
@@ -643,6 +655,7 @@ const I18N = { zh: {
 }, en: {
   placeholder: "e.g. 5090 laptop, 4TB SSD",
   searchBtn: "Search",
+  picksSubTitle: "Get an email when we add new picks",
   heroTitle: ["Search a model.", "See the lowest price in 30 days."],
   heroText: "We sort PC hardware deals from Slickdeals, Reddit and Woot by model, and rank them from lowest to highest price.",
   hotLead: "Popular searches",
@@ -1275,9 +1288,10 @@ async function showTag(slug, query) {
 }
 
 // 订阅：提交到服务器，服务器发确认邮件。say(文字) 用来显示进度和结果
-async function subscribe(email, frequency, say, btn) {
-  if (!CUR_TAG) return;
-  const sub = { email, tag: CUR_TAG.slug, frequency, lang: LANG };
+async function subscribe(email, frequency, say, btn, slug) {
+  slug = slug || (CUR_TAG && CUR_TAG.slug);
+  if (!slug) return;
+  const sub = { email, tag: slug, frequency, lang: LANG };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { say(T.subBadEmail); return; }
   btn.disabled = true; say(T.subSending);
   try {
@@ -1338,6 +1352,23 @@ drawLang();
 $("heroTitle").innerHTML = `${esc(T.heroTitle[0])}<br><mark>${esc(T.heroTitle[1])}</mark>`;
 $("heroText").textContent = T.heroText;
 $("hsubToggle").textContent = T.hsubToggle;
+// 首页"捡漏精选"的订阅框：订阅的是首页精选（特殊标签 picks）
+$("homeSub").innerHTML = `
+  <span class="label">${esc(T.picksSubTitle)}</span>
+  <input type="email" name="email" placeholder="${esc(T.subEmail)}" aria-label="${esc(T.subEmail)}" autocomplete="email">
+  <fieldset class="seg"><legend class="sr">${esc(T.subFreq)}</legend>
+    <label><input type="radio" name="frequency" value="daily" checked><span>${esc(T.subDaily)}</span></label>
+    <label><input type="radio" name="frequency" value="instant"><span>${esc(T.subInstant)}</span></label>
+  </fieldset>
+  <button class="dark" type="submit">${esc(T.subBtn)}</button>
+  <p class="msg" role="status" hidden></p>
+  <p class="fine">${privacyNote()}</p>`;
+$("homeSub").addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target, msg = f.querySelector(".msg");
+  msg.hidden = false;
+  subscribe(f.email.value.trim(), f.frequency.value, t => { msg.textContent = t; }, f.querySelector("button[type=submit]"), "picks");
+});
 $("hsubBtn").textContent = T.subBtn;
 $("status").textContent = T.priceNote;
 const homeReady = rpc("public_home").then(d => {
