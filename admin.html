@@ -104,6 +104,8 @@
   .dl .p small { display:block; font-weight:400; color:var(--muted); font-size:12px; }
   .dl .a { grid-column:2; grid-row:2; display:flex; gap:6px; justify-content:flex-end; }
   .dl .st { font-weight:700; color:var(--muted); }
+  .pager { display:flex; align-items:center; gap:10px; padding-top:10px; font-size:13px; color:var(--muted); }
+  .pager[hidden] { display:none; }
   .chips { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 6px; }
   .chips button { border-radius:999px; padding:4px 12px; font-size:13px; }
   .chips button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; }
@@ -201,7 +203,7 @@
     <p class="muted small" style="margin:0 0 8px">抓到的所有优惠，不管有没有达标，按抓取时间从新到旧排列。</p>
     <div class="chips" id="allFilter" role="group" aria-label="按状态筛选"></div>
     <ul class="dl" id="listAll"></ul>
-    <div style="padding-top:12px"><button id="moreAll" class="hidden">再显示 50 条</button></div>
+    <div class="pager" id="listAllPager" hidden></div>
   </section>
 
   <!-- 标签 -->
@@ -619,7 +621,20 @@ function dealItem(d) {
 // 全部入库：只看，不操作。每次读 50 条
 const ALL_STATUS = { passed: "正在展示", review: "待审核", hidden: "已隐藏", removed: "已删除",
   not_passed: "没达标", no_rule: "没有规则", need_info: "缺信息", other: "不相关" };
-let allDeals = [], allTotal = 0, allStatus = null, allCounts = {};
+let allDeals = [], allTotal = 0, allStatus = null, allCounts = {}, allPage = 0;
+// 列表分页：每页 10 条，列表下面放"上一页 / 第几页 / 下一页"
+const PAGE = 10, pages = {};
+function pagerHtml(page, total) {
+  const n = Math.max(1, Math.ceil(total / PAGE));
+  return `<button type="button" data-pg="${page - 1}" ${page <= 0 ? "disabled" : ""}>上一页</button>
+    <span>第 ${page + 1} / ${n} 页</span>
+    <button type="button" data-pg="${page + 1}" ${page >= n - 1 ? "disabled" : ""}>下一页</button>`;
+}
+function pagerFor(listId) {                       // 列表下面的翻页栏，没有就加一个
+  let el = $(listId + "Pager");
+  if (!el) { el = document.createElement("div"); el.className = "pager"; el.id = listId + "Pager"; $(listId).after(el); }
+  return el;
+}
 const ALL_ORDER = ["passed", "review", "hidden", "removed", "not_passed", "no_rule", "need_info", "other"];
 function drawAllFilter() {
   const sum = Object.values(allCounts).reduce((a, b) => a + b, 0);
@@ -640,18 +655,24 @@ function allItem(d) {
   </li>`;
 }
 async function loadAllDeals(reset) {
-  if (reset) allDeals = [];
-  $("moreAll").disabled = true;
+  if (reset) allPage = 0;
   try {
-    const r = await rpc("admin_deals_all", { p_token: token, p_offset: allDeals.length, p_limit: 50, p_status: allStatus });
-    allDeals = allDeals.concat(r.deals); allTotal = r.total; allCounts = r.counts || {}; drawAllFilter();
+    let r = await rpc("admin_deals_all", { p_token: token, p_offset: allPage * PAGE, p_limit: PAGE, p_status: allStatus });
+    if (!r.deals.length && allPage > 0) {          // 这一页已经没有了（比如刚删了几条），回到最后一页
+      allPage = Math.max(0, Math.ceil(r.total / PAGE) - 1);
+      r = await rpc("admin_deals_all", { p_token: token, p_offset: allPage * PAGE, p_limit: PAGE, p_status: allStatus });
+    }
+    allDeals = r.deals; allTotal = r.total; allCounts = r.counts || {}; drawAllFilter();
     $("listAll").innerHTML = allDeals.map(allItem).join("") || `<li class="muted">还没有</li>`;
-    $("nAll").textContent = `共 ${allTotal} 条，已显示 ${allDeals.length} 条`;
-    $("moreAll").classList.toggle("hidden", allDeals.length >= allTotal);
+    $("nAll").textContent = `共 ${allTotal} 条`;
+    $("listAllPager").innerHTML = pagerHtml(allPage, allTotal);
+    $("listAllPager").hidden = allTotal <= PAGE;
   } catch (e) { $("nAll").textContent = "读取失败：" + e.message; }
-  $("moreAll").disabled = false;
 }
-$("moreAll").addEventListener("click", () => loadAllDeals(false));
+$("listAllPager").addEventListener("click", e => {
+  const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return;
+  allPage = Number(b.dataset.pg); loadAllDeals(false);
+});
 
 function renderDeals() {
   const st = data.settings;
@@ -665,14 +686,20 @@ function renderDeals() {
   $("mergeSame").checked = st.merge_same_deals !== false;
   const by = s => data.deals.filter(d => d.status === s);
   const fill = (id, nId, list, empty) => {
-    $(id).innerHTML = list.length ? list.map(dealItem).join("") : `<li class="muted small" style="display:block">${empty}</li>`;
+    const n = Math.max(1, Math.ceil(list.length / PAGE));
+    const page = pages[id] = Math.min(pages[id] || 0, n - 1);          // 操作后留在原来那一页
+    const shown = list.slice(page * PAGE, page * PAGE + PAGE);
+    $(id).innerHTML = shown.length ? shown.map(dealItem).join("") : `<li class="muted small" style="display:block">${empty}</li>`;
     if (nId) $(nId).textContent = list.length + " 条";
+    const pg = pagerFor(id);
+    pg.innerHTML = pagerHtml(page, list.length); pg.hidden = list.length <= PAGE;
+    pg.onclick = e => { const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return; pages[id] = Number(b.dataset.pg); renderDeals(); };
   };
   fill("listReview", "nReview", by("review"), "没有待审核的优惠");
   fill("listPassed", "nPassed", by("passed"), "网站上现在没有展示中的优惠");
   fill("listHidden", "nHidden", by("hidden"), "没有隐藏的优惠");
   fill("listRemoved", null, by("removed"), "最近没有删除的优惠");
-  loadAllDeals(true);
+  loadAllDeals(false);
   const n = by("review").length;
   $("reviewCount").textContent = n; $("reviewCount").classList.toggle("hidden", !n);
 }
