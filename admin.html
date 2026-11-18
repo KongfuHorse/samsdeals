@@ -324,6 +324,19 @@
         <ul class="dl" id="subLog"></ul>
       </div>
     </div>
+    <div class="card">
+      <h2>订阅邮箱 <span class="muted small" id="nSubList"></span></h2>
+      <div class="muted small">"确认"会把这个邮箱所有等待确认的订阅直接生效，和对方点了确认邮件里的链接一样。没确认的订阅 7 天后会自动删除。</div>
+      <div class="row" style="margin:12px 0 4px">
+        <label class="small" style="flex:1 1 240px">邮箱<br><select id="subAddEmail" style="width:100%"></select></label>
+        <label class="small" style="flex:1 1 200px">订阅标签<br><select id="subAddTag" style="width:100%"></select></label>
+        <label class="small">频率<br><select id="subAddFreq"><option value="daily">每天汇总</option><option value="instant">马上通知</option></select></label>
+        <button class="primary" id="subAddBtn">直接加上</button>
+      </div>
+      <div class="muted small">手动加的订阅马上生效，不发确认邮件。如果这个邮箱已经订阅了这个标签，会改成这里选的频率。</div>
+      <div class="table-wrap"><table style="min-width:560px"><thead><tr><th>邮箱</th><th>订阅的标签</th><th>语言</th><th>订阅时间</th><th></th></tr></thead><tbody id="subList"></tbody></table></div>
+      <div class="pager" id="subListPager" hidden></div>
+    </div>
   </section>
 
   <section id="tab-rules" class="card hidden">
@@ -530,6 +543,7 @@ async function reload() {
   ]);
   renderAll();
   renderSubs();
+  loadSubList();
 }
 
 // ---------- 订阅 ----------
@@ -553,6 +567,60 @@ function renderSubs() {
       <div class="m"><span>${fmtTime(l.created_at)}</span>${l.ok ? "<span>已发出</span>" : `<span class="reason">没发出：${esc(l.error || "")}</span>`}</div></li>`).join("")
     || `<li class="muted">还没有发过邮件</li>`;
 }
+// 订阅邮箱列表：每页 10 个，等待确认的可以一键确认
+const FREQ_NAMES = { daily: "每天汇总", instant: "马上通知" };
+let subList = [], subListPage = 0;
+const subPending = x => x.status === "pending" || !!x.pending_frequency;
+async function loadSubList() {
+  let r;
+  try { r = await rpc("admin_sub_list", { p_token: token }); }
+  catch (e) { $("subList").innerHTML = `<tr><td colspan="5" class="muted">读取失败：${esc(e.message)}</td></tr>`; return; }
+  subList = r.subscribers;
+  const keepE = $("subAddEmail").value, keepT = $("subAddTag").value;
+  $("subAddEmail").innerHTML = `<option value="">选择邮箱</option>` + subList.map(s => `<option value="${s.id}">${esc(s.email)}</option>`).join("");
+  $("subAddTag").innerHTML = `<option value="">选择标签</option>` + r.tags.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+  $("subAddEmail").value = keepE; $("subAddTag").value = keepT;
+  drawSubList();
+}
+function drawSubList() {
+  const n = Math.max(1, Math.ceil(subList.length / PAGE));
+  subListPage = Math.min(subListPage, n - 1);
+  const waiting = subList.filter(s => s.subs.some(subPending)).length;
+  $("nSubList").textContent = `共 ${subList.length} 个` + (waiting ? `，${waiting} 个等待确认` : "");
+  $("subList").innerHTML = subList.slice(subListPage * PAGE, subListPage * PAGE + PAGE).map(s => {
+    const tags = s.subs.map(x => {
+      const freq = FREQ_NAMES[x.pending_frequency || x.frequency] || x.frequency;
+      const wait = subPending(x) ? `<span class="reason">${x.status === "pending" ? "等待确认" : "改频率待确认"}</span>` : "";
+      return `<div><a href="./?t=${encodeURIComponent(x.slug)}" target="_blank" rel="noopener">${esc(x.tag)}</a> <span class="muted small">${freq}</span> ${wait}</div>`;
+    }).join("") || `<span class="muted">没有订阅</span>`;
+    const btn = s.subs.some(subPending) ? `<button class="primary" data-confirm="${s.id}">确认</button>` : "";
+    return `<tr><td>${esc(s.email)}</td><td>${tags}</td><td>${s.lang === "en" ? "英文" : "中文"}</td><td>${fmtTime(s.created_at)}</td><td>${btn}</td></tr>`;
+  }).join("") || `<tr><td colspan="5" class="muted">还没有人订阅</td></tr>`;
+  $("subListPager").innerHTML = pagerHtml(subListPage, subList.length);
+  $("subListPager").hidden = subList.length <= PAGE;
+}
+$("subListPager").addEventListener("click", e => {
+  const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return;
+  subListPage = Number(b.dataset.pg); drawSubList();
+});
+$("subAddBtn").addEventListener("click", async () => {
+  const sid = Number($("subAddEmail").value), tid = Number($("subAddTag").value);
+  if (!sid || !tid) { toast("请先选邮箱和标签", true); return; }
+  $("subAddBtn").disabled = true;
+  try {
+    await rpc("admin_sub_add", { p_token: token, p_subscriber_id: sid, p_tag_id: tid, p_frequency: $("subAddFreq").value });
+    toast("已加上"); await reload();
+  } catch (err) { toast("没加上：" + err.message, true); }
+  $("subAddBtn").disabled = false;
+});
+$("subList").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-confirm]"); if (!b) return;
+  b.disabled = true;
+  try {
+    const n = await rpc("admin_sub_confirm", { p_token: token, p_subscriber_id: Number(b.dataset.confirm) });
+    toast(`已确认 ${n} 个订阅`); await reload();
+  } catch (err) { b.disabled = false; toast("确认失败：" + err.message, true); }
+});
 $("saveSubs").addEventListener("click", async () => {
   try {
     await rpc("admin_sub_settings_save", { p_token: token, p_enabled: $("subEnabled").checked, p_daily: Number($("subDaily").value),

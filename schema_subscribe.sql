@@ -185,7 +185,7 @@ begin
   perform _sub_cleanup();
 end $$;
 
--- 清理：7 天没确认的订阅请求和邮箱、45 天前的发送记录、2 天前的 IP 摘要（隐私政策里写了这些期限）
+-- 清理：7 天没确认的订阅请求、45 天前的发送记录、2 天前的 IP 摘要（隐私政策里写了这些期限）
 create or replace function _sub_cleanup()
 returns void language plpgsql security definer set search_path = public as $$
 begin
@@ -193,10 +193,7 @@ begin
   delete from subscriptions where status = 'pending' and requested_at < now() - interval '7 days';
   update subscriptions set pending_frequency = null, confirm_token = null
   where status = 'active' and confirm_token is not null and requested_at < now() - interval '7 days';
-  delete from subscribers s where s.confirmed_at is null and s.created_at < now() - interval '7 days'
-    and not exists (select 1 from subscriptions x where x.subscriber_id = s.id);
-  delete from subscribers s where not exists (select 1 from subscriptions x where x.subscriber_id = s.id)
-    and s.created_at < now() - interval '7 days';
+  -- 邮箱不自动删除（没有订阅也保留）；用户自己退订最后一个标签或退订全部时才删
   delete from sub_ip_log where created_at < now() - interval '2 days';
 end $$;
 
