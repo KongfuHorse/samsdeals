@@ -125,16 +125,17 @@ const daysAgo = (t: string) => Math.floor((Date.now() - new Date(t).getTime()) /
 // 和网页一样的标题清理、去重（同一商家、价格差 2% 以内、标题相似）
 const norm = (s: unknown) => String(s ?? "").normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, "");
 function cleanTitle(t: string) {
-  return String(t || "")
+  const r = String(t || "")
     .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")
     .replace(/^\s*[-–—•]+\s*/, "")
-    .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")
+    .replace(/^\s*\$[\d,]+(?:\.\d+)?\*?\s*(?:[|:–-]\s*)?/, "")
     .replace(/\s*[-–:|,]?\s*\(\s*\$[\d,]+(?:\.\d+)?\*?\s*\)\s*$/, "")
     .replace(/\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$/i, "")
     .replace(/\s*\[[^\]]{1,30}\]\s*$/, "")
     .replace(/\s+@\s+[\w .'&-]+$/, "")
     .replace(/\s*[-–:|,]\s*$/, "")
     .trim();
+  return r || String(t || "").trim();
 }
 const words = (t: string) => new Set(cleanTitle(t).toLowerCase().split(/[^a-z0-9一-鿿]+/).filter((w) => w.length > 1));
 function similar(a: string, b: string) {
