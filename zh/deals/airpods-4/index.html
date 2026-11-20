@@ -214,7 +214,7 @@
   .row .small { font-size:13px; color:var(--faint); white-space:nowrap; }
   /* 过期的优惠：灰色、划线，左上角标"已过期" */
   .row { position:relative; }
-  .row.expired { background:var(--tile); }
+  .row.expired { background:var(--band); }
   .row.expired .thumb { filter:grayscale(1); opacity:.55; }
   .row.expired .t, .row.expired .big, .row.expired .money-inline { color:var(--faint); text-decoration:line-through; text-decoration-thickness:1.5px; }
   .row.expired .meta, .row.expired .small { color:var(--faint); }
@@ -359,9 +359,9 @@
     <span class="no hi">1</span>
     <span class="thumb"><img src="https://static.slickdealscdn.com/attachment/2/1/9/3/4/6/6/300x300/22402014.thumb" alt="" loading="lazy" referrerpolicy="no-referrer" data-cat="apple" data-size="40" onerror="this.outerHTML=iconSvg(this.dataset.cat,Number(this.dataset.size))"></span>
     <span class="info">
-      <span class="t"></span>
+      <span class="t">Apple AirPods 4</span>
       <span class="money-inline">$89</span>
-      <span class="meta">全新 · Slickdeals · 2 天前发现</span>
+      <span class="meta">全新 · Slickdeals · 3 天前发现</span>
     </span>
     <span class="money"><span class="big">$89</span></span>
   </a><a class="row " href="https://www.techradar.com/seasonal-sales/apple-black-friday-au-deals#apple-airpods-4" target="_blank" rel="noopener" title="Apple AirPods 4">
@@ -580,17 +580,19 @@ function ago(t) {
   return T.dayAgo(Math.round(m / 1440));
 }
 // 标题清理：去掉开头的 [GPU] 这类标签、结尾的价格和商家，信息已经单独显示
+// 开头的价格（"$329 Apple Watch…"、"$599* | ASUS…"）也去掉；清理完是空的就用原标题
 function cleanTitle(t) {
-  return String(t || "")
+  const r = String(t || "")
     .replace(/^\s*\[[^\]]{1,20}\]\s*/, "")
     .replace(/^\s*[-–—•]+\s*/, "")
-    .replace(/^\s*\$[\d,.]+\*?\s*\|\s*/, "")
+    .replace(/^\s*\$[\d,]+(?:\.\d+)?\*?\s*(?:[|:–-]\s*)?/, "")
     .replace(/\s*[-–:|,]?\s*\(\s*\$[\d,]+(?:\.\d+)?\*?\s*\)\s*$/, "")
     .replace(/\s*(?:[-–:|,]\s*)?(?:(?:starting\s+at|as\s+low\s+as|from|for|at|only|now|just)\s+)?\$[\d,]+(?:\.\d+)?\*?(?:\s+.*)?$/i, "")
     .replace(/\s*\[[^\]]{1,30}\]\s*$/, "")
     .replace(/\s+@\s+[\w .'&-]+$/, "")
     .replace(/\s*[-–:|,]\s*$/, "")
     .trim();
+  return r || String(t || "").trim();
 }
 
 // ---------- 和数据库通信 ----------
@@ -981,7 +983,8 @@ async function showHome() {
   featuredLoaded = true;
   $("featuredTitle").textContent = T.featured;
   $("featuredNote").textContent = T.featuredNote;
-  $("featured").innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
+  const keep = !PRERENDER && !!$("featured").firstElementChild && !$("featured").querySelector(".empty");   // 静态页里已有的精选先留着
+  if (!keep) $("featured").innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
   const since = new Date(Date.now() - FEATURED_DAYS * 86400000).toISOString();
   try {
     const [rows, runs] = await Promise.all([
@@ -995,7 +998,7 @@ async function showHome() {
     renderCollage(rows);
   } catch (e) {
     featuredLoaded = false;
-    $("featured").innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`;
+    if (!keep) $("featured").innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`;
   }
 }
 let lastRun = null;
@@ -1068,10 +1071,12 @@ async function showTag(slug, query) {
   window.scrollTo(0, 0);
   const body = $("tagBody"), mine = ++tagRequest;
   setHeaderSub(null);
-  body.innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
+  // 打开静态页时，先留着页面里已经生成好的列表；读不到数据也继续显示它（不然搜索引擎会当成空页面）
+  const keep = mine === 1 && !PRERENDER && !!body.querySelector(".tag-head");
+  if (!keep) body.innerHTML = `<div class="empty">${esc(T.loading)}</div>`;
   let data;
   try { data = await rpc("public_tag_deals", { p_slug: slug, p_visitor: visitorId(), p_query: query ? norm(query) : null }); }
-  catch (e) { if (mine === tagRequest) body.innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`; return; }
+  catch (e) { if (mine === tagRequest && !keep) body.innerHTML = `<div class="empty"><strong>${esc(T.loadError)}</strong>${esc(T.loadErrorHint)}</div>`; return; }
   if (mine !== tagRequest) return;
   if (!data) {
     await homeReady;
