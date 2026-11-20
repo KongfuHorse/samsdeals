@@ -114,6 +114,8 @@
   .count { display:inline-block; min-width:18px; padding:0 6px; margin-left:4px; border-radius:999px; background:var(--bad); color:#fff; font-size:11px; line-height:18px; text-align:center; }
   .sub { margin:18px 0 4px; display:flex; align-items:baseline; gap:8px; }
   .sub h3 { font-size:14px; margin:0; }
+  .all-head { flex-wrap:wrap; align-items:center; }
+  .all-head input { margin-left:auto; flex:0 1 300px; min-width:200px; }
   @media (max-width:640px) { .dl li { grid-template-columns:1fr; } .dl .p, .dl .a { grid-column:1; grid-row:auto; text-align:left; justify-content:flex-start; } }
   .help { background:var(--accent-soft); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px; }
   .help ol { margin:6px 0 0; padding-left:20px; }
@@ -195,15 +197,14 @@
     <ul class="dl" id="listReview"></ul>
     <div class="sub"><h3>正在展示</h3><span class="muted small" id="nPassed"></span></div>
     <ul class="dl" id="listPassed"></ul>
-    <div class="sub"><h3>已隐藏</h3><span class="muted small" id="nHidden"></span></div>
-    <ul class="dl" id="listHidden"></ul>
-    <div class="sub"><h3>最近删除</h3><span class="muted small">30 天内，可以恢复</span></div>
-    <ul class="dl" id="listRemoved"></ul>
-    <div class="sub"><h3>全部入库</h3><span class="muted small" id="nAll"></span></div>
-    <p class="muted small" style="margin:0 0 8px">抓到的所有优惠，不管有没有达标，按抓取时间从新到旧排列。</p>
+    <div class="sub all-head"><h3>全部入库</h3><span class="muted small" id="nAll"></span>
+      <input type="search" id="allSearch" placeholder="搜索全库，比如 5090 或 Costco" aria-label="搜索全库优惠"></div>
+    <p class="muted small" style="margin:0 0 8px">抓到的所有优惠，不管有没有达标，按抓取时间从新到旧排列。"展示"会放到网站上（14 天内抓到的会进首页精选）。</p>
     <div class="chips" id="allFilter" role="group" aria-label="按状态筛选"></div>
     <ul class="dl" id="listAll"></ul>
     <div class="pager" id="listAllPager" hidden></div>
+    <div class="sub"><h3>已隐藏</h3><span class="muted small" id="nHidden"></span></div>
+    <ul class="dl" id="listHidden"></ul>
   </section>
 
   <!-- 标签 -->
@@ -656,12 +657,11 @@ function renderAll() {
 const CAT_NAMES = { laptop:"游戏笔记本", desktop:"台式机", graphics_card:"显卡", ssd:"固态硬盘", hdd:"机械硬盘", apple:"苹果", other:"其他" };
 const COND_NAMES = { new:"全新", open_box:"开箱", refurb:"翻新", used:"二手" };
 const ACTIONS = {
-  review:  [["passed", "通过", "primary"], ["removed", "拒绝", "danger"]],
-  passed:  [["hidden", "隐藏", ""], ["removed", "删除", "danger"]],
-  hidden:  [["passed", "恢复展示", "primary"], ["removed", "删除", "danger"]],
-  removed: [["passed", "恢复展示", ""]],
+  review:  [["passed", "通过", "primary"], ["hidden", "拒绝", "danger"]],   // 拒绝就是隐藏
+  passed:  [["hidden", "隐藏", ""]],
+  hidden:  [["passed", "恢复展示", "primary"]],
 };
-const DONE_TEXT = { passed: "已展示", hidden: "已隐藏", removed: "已删除" };
+const DONE_TEXT = { passed: "已展示", hidden: "已隐藏" };
 function usd(x, cents) { return "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: 2 }); }
 function dealItem(d) {
   const hdd = d.category === "hdd";
@@ -683,13 +683,13 @@ function dealItem(d) {
     <div class="t"><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></div>
     <div class="p">${usd(d.price, true)}${priceNote ? `<small>${priceNote}</small>` : ""}</div>
     <div class="m">${d.expired_at ? `<span class="reason">已过期</span>` : ""}${meta.map(x => `<span>${esc(x)}</span>`).join("")}${reason ? `<span class="reason">${esc(reason.replace("待审核：", "送审原因："))}</span>` : ""}</div>
-    <div class="a">${editBtn}${pinBtn}${expBtn}${ACTIONS[d.status].map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
+    <div class="a">${editBtn}${pinBtn}${expBtn}${(ACTIONS[d.status] || []).map(([st, label, cls]) => `<button class="${cls}" data-deal="${d.id}" data-st="${st}">${label}</button>`).join("")}</div>
   </li>`;
 }
-// 全部入库：只看，不操作。每次读 50 条
+// 全部入库：每页 10 条，可以按状态筛选、搜索全库；每条都能展示 / 过期 / 隐藏
 const ALL_STATUS = { passed: "正在展示", review: "待审核", hidden: "已隐藏", removed: "已删除",
   not_passed: "没达标", no_rule: "没有规则", need_info: "缺信息", other: "不相关" };
-let allDeals = [], allTotal = 0, allStatus = null, allCounts = {}, allPage = 0;
+let allDeals = [], allTotal = 0, allStatus = null, allCounts = {}, allPage = 0, allQuery = "";
 // 列表分页：每页 10 条，列表下面放"上一页 / 第几页 / 下一页"
 const PAGE = 10, pages = {};
 function pagerHtml(page, total) {
@@ -720,23 +720,34 @@ function allItem(d) {
     <div class="t"><a href="${esc(d.url)}" target="_blank" rel="noopener">${esc(d.title)}</a></div>
     <div class="p">${d.price != null ? usd(d.price, true) : "–"}</div>
     <div class="m"><span class="st st-${esc(d.status)}">${esc(ALL_STATUS[d.status] || d.status)}</span>${d.expired_at ? `<span class="reason">已过期</span>` : ""}${meta.map(x => `<span>${esc(x)}</span>`).join("")}</div>
+    <div class="a">
+      <button class="primary" data-deal="${d.id}" data-st="passed" ${d.status === "passed" ? "disabled" : ""}
+        ${Date.now() - new Date(d.created_at) > 14 * 86400000 ? 'data-old="1"' : ""}>${d.status === "passed" ? "展示中" : "展示"}</button>
+      <button data-exp="${d.id}" data-on="${d.expired_at ? 0 : 1}">${d.expired_at ? "取消过期" : "过期"}</button>
+      <button data-deal="${d.id}" data-st="hidden" ${d.status === "hidden" ? "disabled" : ""}>${d.status === "hidden" ? "已隐藏" : "隐藏"}</button>
+    </div>
   </li>`;
 }
 async function loadAllDeals(reset) {
   if (reset) allPage = 0;
   try {
-    let r = await rpc("admin_deals_all", { p_token: token, p_offset: allPage * PAGE, p_limit: PAGE, p_status: allStatus });
+    let r = await rpc("admin_deals_all", { p_token: token, p_offset: allPage * PAGE, p_limit: PAGE, p_status: allStatus, p_query: allQuery || null });
     if (!r.deals.length && allPage > 0) {          // 这一页已经没有了（比如刚删了几条），回到最后一页
       allPage = Math.max(0, Math.ceil(r.total / PAGE) - 1);
-      r = await rpc("admin_deals_all", { p_token: token, p_offset: allPage * PAGE, p_limit: PAGE, p_status: allStatus });
+      r = await rpc("admin_deals_all", { p_token: token, p_offset: allPage * PAGE, p_limit: PAGE, p_status: allStatus, p_query: allQuery || null });
     }
     allDeals = r.deals; allTotal = r.total; allCounts = r.counts || {}; drawAllFilter();
-    $("listAll").innerHTML = allDeals.map(allItem).join("") || `<li class="muted">还没有</li>`;
+    $("listAll").innerHTML = allDeals.map(allItem).join("") || `<li class="muted">${allQuery ? "没有搜到" : "还没有"}</li>`;
     $("nAll").textContent = `共 ${allTotal} 条`;
     $("listAllPager").innerHTML = pagerHtml(allPage, allTotal);
     $("listAllPager").hidden = allTotal <= PAGE;
   } catch (e) { $("nAll").textContent = "读取失败：" + e.message; }
 }
+let allSearchTimer = null;
+$("allSearch").addEventListener("input", () => {
+  clearTimeout(allSearchTimer);
+  allSearchTimer = setTimeout(() => { allQuery = $("allSearch").value.trim(); loadAllDeals(true); }, 300);
+});
 $("listAllPager").addEventListener("click", e => {
   const b = e.target.closest("button[data-pg]"); if (!b || b.disabled) return;
   allPage = Number(b.dataset.pg); loadAllDeals(false);
@@ -766,7 +777,6 @@ function renderDeals() {
   fill("listReview", "nReview", by("review"), "没有待审核的优惠");
   fill("listPassed", "nPassed", by("passed"), "网站上现在没有展示中的优惠");
   fill("listHidden", "nHidden", by("hidden"), "没有隐藏的优惠");
-  fill("listRemoved", null, by("removed"), "最近没有删除的优惠");
   loadAllDeals(false);
   const n = by("review").length;
   $("reviewCount").textContent = n; $("reviewCount").classList.toggle("hidden", !n);
@@ -774,9 +784,11 @@ function renderDeals() {
 $("tab-deals").addEventListener("click", async e => {
   const b = e.target.closest("button[data-deal]"); if (!b) return;
   const st = b.dataset.st;
-  if (st === "removed" && !confirm("删除后网站上不再显示，以后抓取也不会重新加回来。30 天内可以在\"最近删除\"里恢复。确定删除？")) return;
   b.disabled = true;
-  try { await rpc("admin_set_deal_status", { p_token: token, p_id: Number(b.dataset.deal), p_status: st }); toast(DONE_TEXT[st]); await reload(); }
+  try {
+    await rpc("admin_set_deal_status", { p_token: token, p_id: Number(b.dataset.deal), p_status: st });
+    toast(DONE_TEXT[st] + (st === "passed" && b.dataset.old ? "。超过 14 天，只在标签页显示，不进首页精选" : "")); await reload();
+  }
   catch (err) { b.disabled = false; toast("操作失败：" + err.message, true); }
 });
 $("tab-deals").addEventListener("click", async e => {
