@@ -12,3 +12,16 @@ begin
   if not found then raise exception '找不到这条优惠'; end if;
 end $$;
 grant execute on function admin_set_deal_expired(text, bigint, boolean) to anon;
+
+-- 自动过期：抓取超过 15 天的优惠（全库，不分状态）自动标记过期；pg_cron 每小时跑一次
+create or replace function _auto_expire_deals()
+returns int language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  update deals set expired_at = now() where expired_at is null and created_at < now() - interval '15 days';
+  get diagnostics n = row_count;
+  return n;
+end $$;
+revoke all on function _auto_expire_deals() from public, anon, authenticated;
+select cron.unschedule('subdeals-auto-expire') where exists (select 1 from cron.job where jobname = 'subdeals-auto-expire');
+select cron.schedule('subdeals-auto-expire', '7 * * * *', 'select _auto_expire_deals()');
