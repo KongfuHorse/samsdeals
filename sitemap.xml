@@ -302,6 +302,13 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://subdeals.net/en/deals/iphone-air/"/>
   </url>
   <url>
+    <loc>https://subdeals.net/zh/deals/iphone-duo/</loc>
+    <lastmod>2026-11-24</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://subdeals.net/zh/deals/iphone-duo/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://subdeals.net/en/deals/iphone-duo/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://subdeals.net/en/deals/iphone-duo/"/>
+  </url>
+  <url>
     <loc>https://subdeals.net/zh/deals/laptop/</loc>
     <lastmod>2026-11-24</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://subdeals.net/zh/deals/laptop/"/>
@@ -937,6 +944,13 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://subdeals.net/zh/deals/iphone-air/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://subdeals.net/en/deals/iphone-air/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://subdeals.net/en/deals/iphone-air/"/>
+  </url>
+  <url>
+    <loc>https://subdeals.net/en/deals/iphone-duo/</loc>
+    <lastmod>2026-11-24</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://subdeals.net/zh/deals/iphone-duo/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://subdeals.net/en/deals/iphone-duo/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://subdeals.net/en/deals/iphone-duo/"/>
   </url>
   <url>
     <loc>https://subdeals.net/en/deals/laptop/</loc>
